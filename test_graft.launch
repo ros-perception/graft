@@ -1,0 +1,10 @@
+<launch>
+
+  <group ns="graft_ekf_velocity">
+    <rosparam file="$(find graft)/config/sample_config.yaml" command="load" />
+  </group>
+
+
+  <node name="graft_ekf_velocity" pkg="graft" type="graft_ekf_velocity" output="screen" />
+
+</launch>

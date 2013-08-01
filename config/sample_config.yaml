@@ -1,0 +1,79 @@
+filter_type: EKF # EKF or UKF - may change to be different nodes instead of a parameter
+
+planar_output: True # Output only x, y, and rotation about z
+
+output_frame: odom # TF frame id, param name ported from robot_pose_ekf
+parent_frame_id: odom # TF frame id, override output_frame if set
+child_frame_id: base_link #TF frame id
+
+freq: 30.0 # In Hz, param name ported from robot_pose_ekf
+update_rate: 50.0 #Overides 'freq' if set, in Hz
+update_topic: odom # Which topic to trigger updates, if blank, uses timed update_rate, if '*', will trigger on all new topics
+
+dt_override : 0.0 # Override the dt for update_rate or update_topic, ignored if 0
+
+queue_size: 1
+
+publish_tf: false
+
+# Process noise covariance 2x2 for velocites, 5x5 for 2d position
+Q: [0.25, 0,
+    0, 0.25]
+
+topics: {
+  base_odometry: {
+    topic: /odom,
+    type: nav_msgs/Odometry,
+    absolute_pose: False, # Overrides delta_pose
+    delta_pose: False, # Overrides use_velocities
+    use_velocities: True,
+    timeout: 1.01,
+
+    # Row major 6x6: x, y, z, rotation about x, rotation about y, rotation about z
+    # Read from message if all zero
+    override_pose_covariance: [0, 0, 0, 0, 0, 0,
+                               0, 0, 0, 0, 0, 0,
+                               0, 0, 0, 0, 0, 0,
+                               0, 0, 0, 0, 0, 0,
+                               0, 0, 0, 0, 0, 0,
+                               0, 0, 0, 0, 0, 0],
+
+    # Row major 6x6: vx, vy, vz, wx, wy, wz
+    # Read from message if all zero
+    override_twist_covariance: [0.001, 0, 0, 0, 0, 0,
+                                0, 0, 0, 0, 0, 0,
+                                0, 0, 0, 0, 0, 0,
+                                0, 0, 0, 0, 0, 0,
+                                0, 0, 0, 0, 0, 0,
+                                0, 0, 0, 0, 0, 0.01],
+  },
+
+  base_imu: {
+    topic: /imu,
+    type: sensor_msgs/Imu,
+    absolute_orientation: False, # Overrides delta_orientation
+    delta_orientation: False, # Overrides use_velocities
+    use_velocities: True,
+    use_accelerations: False,
+    timeout: 1.0,
+
+    # Row major 3x3: rotation about x, rotation about y, rotation about z
+    # Read from message if all zero
+    override_orientation_covariance: [0, 0, 0,
+                                      0, 0, 0,
+                                      0, 0, 0],
+
+    # Row major 3x3: wx, wy, wz
+    # Read from message if all zero
+    override_angular_velocity_covariance: [0, 0, 0,
+                                           0, 0, 0,
+                                           0, 0, 0.000001],
+
+    # Row major 3x3: ax, ay, az
+    # Read from message if all zero
+    override_linear_acceleration_covariance: [0, 0, 0,
+                                              0, 0, 0,
+                                              0, 0, 0],
+  },
+
+}
