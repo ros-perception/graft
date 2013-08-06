@@ -49,21 +49,27 @@ class GraftImuTopic: public GraftSensor {
 
   	void callback(const sensor_msgs::Imu::ConstPtr& msg);
 
-    virtual MatrixXd h(graft::GraftState& state);
+    virtual graft::GraftSensorResidual::Ptr h(const graft::GraftState& state);
 
-    virtual MatrixXd H(graft::GraftState& state);
+    virtual graft::GraftSensorResidual::Ptr z();
 
-    virtual MatrixXd y(graft::GraftState& predicted);
+    virtual void setName(const std::string& name);
 
-    virtual MatrixXd R();
+    virtual std::string getName();
 
-    void useAbsoluteOrientation(bool absolute_orientation);
+    //virtual MatrixXd H(graft::GraftState& state);
+
+    //virtual MatrixXd y(graft::GraftState& predicted);
+
+    //virtual MatrixXd R();
+
+    //void useAbsoluteOrientation(bool absolute_orientation);
 
     void useDeltaOrientation(bool delta_orientation);
 
-    void useVelocities(bool use_velocities);
+    //void useVelocities(bool use_velocities);
 
-    void useAccelerations(bool use_accelerations);
+    //void useAccelerations(bool use_accelerations);
 
     void setTimeout(double timeout);
 
@@ -74,8 +80,6 @@ class GraftImuTopic: public GraftSensor {
     void setLinearAccelerationCovariance(boost::array<double, 9>& cov);
     
   private:
-
-  	virtual MatrixXd z();
 
     sensor_msgs::Imu::ConstPtr getMsg();
 

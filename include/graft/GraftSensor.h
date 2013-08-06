@@ -37,6 +37,7 @@
 #include <ros/ros.h>
 #include <Eigen/Dense>
 #include <graft/GraftState.h>
+#include <graft/GraftSensorResidual.h>
 
 #include <nav_msgs/Odometry.h>
 
@@ -46,17 +47,25 @@ class GraftSensor{
   public:
     virtual ~GraftSensor(){}
 
-    virtual MatrixXd h(graft::GraftState& state) = 0;
+    //virtual MatrixXd H(graft::GraftState& state) = 0;
 
-    virtual MatrixXd H(graft::GraftState& state) = 0;
+    virtual graft::GraftSensorResidual::Ptr z() = 0;
 
-    virtual MatrixXd y(graft::GraftState& predicted) = 0;
+    virtual graft::GraftSensorResidual::Ptr h(const graft::GraftState& state) = 0;
 
-    virtual MatrixXd R() = 0;
+    virtual void setName(const std::string& name) = 0;
+
+    virtual std::string getName() = 0;
+
+    //virtual graft::GraftSensorResidual y(graft::GraftState& predicted) = 0;
+
+    //virtual MatrixXd R() = 0;
 
   private:
 
-    virtual MatrixXd z() = 0;
+    
+
+    
 };
 
 #endif

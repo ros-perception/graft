@@ -3,7 +3,7 @@ project(graft)
 
 find_package(catkin REQUIRED COMPONENTS message_generation rosconsole roscpp geometry_msgs sensor_msgs nav_msgs tf)
 
-find_package(Eigen REQUIRED)
+find_package(Eigen REQUIRED COMPONENTS Dense Cholesky)
 include_directories(${Eigen_INCLUDE_DIRS})
 
 ## Generate messages in the 'msg' folder
@@ -12,8 +12,7 @@ add_message_files(
   FILES
   GraftState.msg
   GraftControl.msg
-  GraftImuSensorResidual.msg
-  GraftOdometrySensorResidual.msg
+  GraftSensorResidual.msg
 )
 
 ## Generate added messages and services with any dependencies listed here
@@ -49,19 +48,20 @@ add_library(GraftParameterManager src/GraftParameterManager.cpp)
 add_dependencies(GraftParameterManager ${PROJECT_NAME}_gencpp)
 target_link_libraries(GraftParameterManager GraftOdometryTopic GraftImuTopic)
 
-add_library(GraftEKFVelocity src/GraftEKFVelocity.cpp)
-add_dependencies(GraftEKFVelocity ${PROJECT_NAME}_gencpp GraftOdometryTopic)
+add_library(GraftUKFVelocity src/GraftUKFVelocity.cpp)
+add_dependencies(GraftUKFVelocity ${PROJECT_NAME}_gencpp)
+target_link_libraries(GraftUKFVelocity GraftOdometryTopic GraftImuTopic)
 
 ## Declare a cpp executable
-add_executable(graft_ekf_velocity src/graft_ekf_velocity.cpp)
-target_link_libraries(graft_ekf_velocity GraftParameterManager GraftEKFVelocity GraftOdometryTopic GraftImuTopic ${catkin_LIBRARIES})
+add_executable(graft_ukf_velocity src/graft_ukf_velocity.cpp)
+target_link_libraries(graft_ukf_velocity GraftUKFVelocity GraftParameterManager GraftOdometryTopic GraftImuTopic ${catkin_LIBRARIES})
 
 #############
 ## Install ##
 #############
 
 # Mark executables and/or libraries for installation
-install(TARGETS GraftOdometryTopic GraftImuTopic GraftParameterManager GraftEKFVelocity graft_ekf_velocity
+install(TARGETS GraftOdometryTopic GraftImuTopic GraftParameterManager GraftUKFVelocity graft_ukf_velocity
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}

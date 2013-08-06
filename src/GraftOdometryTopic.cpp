@@ -47,14 +47,49 @@ void GraftOdometryTopic::callback(const nav_msgs::Odometry::ConstPtr& msg){
 	msg_ = msg;
 }
 
-MatrixXd GraftOdometryTopic::h(graft::GraftState& state){
-  Matrix<double, 2, 1> out;
-  out(0) = state.twist.linear.x;
-  out(1) = state.twist.angular.z;
+void GraftOdometryTopic::setName(const std::string& name){
+	std::cout << name << std::endl;
+	name_ = name;
+	std::cout << name_ << std::endl;
+}
+
+std::string GraftOdometryTopic::getName(){
+	return name_;
+}
+
+graft::GraftSensorResidual::Ptr GraftOdometryTopic::h(const graft::GraftState& state){
+	///< @TODO If timeout, return NULL
+	graft::GraftSensorResidual::Ptr out(new graft::GraftSensorResidual());
+	out->header = state.header;
+	out->name = name_;
+	out->pose = state.pose;
+	out->twist = state.twist;
+	out->twist_covariance[0] = 1;
+	out->twist_covariance[35] = 1;
   return out;
 }
 
-MatrixXd GraftOdometryTopic::H(graft::GraftState& state){
+graft::GraftSensorResidual::Ptr GraftOdometryTopic::z(){
+	if(msg_ == NULL){ ///< @TODO If timeout, return NULL
+		return graft::GraftSensorResidual::Ptr();
+	}
+	graft::GraftSensorResidual::Ptr out(new graft::GraftSensorResidual());
+	out->header = msg_->header;
+	out->name = name_;
+	out->pose = msg_->pose.pose;
+	out->twist = msg_->twist.twist;
+	out->pose_covariance = pose_covariance_;
+	out->twist_covariance = twist_covariance_;
+	out->twist_covariance[0] = 0.001;
+  out->twist_covariance[35] = 0.01;
+	//if(msg_ != NULL){ ///< @TODO CHECK FOR SMALL/NEGATIVE COVARIANCE (out.diagonal().sum() < 0.001) All zero and we shouldn't have negative values, use from message
+	//	out->pose_covariance = msg_->pose.covariance;
+	//	out->twist_covariance = msg_->twist.covariance;
+	//}
+  return out;
+}
+
+/*MatrixXd GraftOdometryTopic::H(graft::GraftState& state){
   Matrix<double, 2, 2> out;
   out(0,0) = 1;
   out(1,1) = 1;
@@ -77,30 +112,21 @@ MatrixXd GraftOdometryTopic::R(){
 	return out;
 }
 
-MatrixXd GraftOdometryTopic::z(){
-  Matrix<double, 2, 1> out;
-  if(msg_ != NULL){
-	  out(0) = msg_->twist.twist.linear.x;
-	  out(1) = msg_->twist.twist.angular.z;
-  }
-  return out;
-}
-
 void GraftOdometryTopic::useAbsolutePose(bool absolute_pose){
 	absolute_pose_ = absolute_pose;
 	if(absolute_pose_ == true){
 		ROS_WARN("Absolute pose from odometry not yet supported.");
 		absolute_pose_ = false;
 	}
-}
+}*/
 
 void GraftOdometryTopic::useDeltaPose(bool delta_pose){
 	delta_pose_ = delta_pose;
 }
 
-void GraftOdometryTopic::useVelocities(bool use_velocities){
+/*void GraftOdometryTopic::useVelocities(bool use_velocities){
 	use_velocities_ = use_velocities;
-}
+}*/
 
 void GraftOdometryTopic::setTimeout(double timeout){
 	timeout_ = timeout;

@@ -49,20 +49,26 @@ class GraftOdometryTopic: public GraftSensor {
 
   	void callback(const nav_msgs::Odometry::ConstPtr& msg);
 
-    virtual MatrixXd h(graft::GraftState& state);
+    virtual graft::GraftSensorResidual::Ptr h(const graft::GraftState& state);
 
-    virtual MatrixXd H(graft::GraftState& state);
+    virtual graft::GraftSensorResidual::Ptr z();
 
-    virtual MatrixXd y(graft::GraftState& predicted);
+    virtual void setName(const std::string& name);
 
-    virtual MatrixXd R();
+    virtual std::string getName();
+
+    //virtual MatrixXd H(graft::GraftState& state);
+
+    //virtual MatrixXd y(graft::GraftState& predicted);
+
+    //virtual MatrixXd R();
 
 
-    void useAbsolutePose(bool absolute_pose);
+    //void useAbsolutePose(bool absolute_pose);
 
     void useDeltaPose(bool delta_pose);
 
-    void useVelocities(bool use_velocities);
+    //void useVelocities(bool use_velocities);
 
     void setTimeout(double timeout);
 
@@ -71,8 +77,6 @@ class GraftOdometryTopic: public GraftSensor {
     void setTwistCovariance(boost::array<double, 36>& cov);
     
   private:
-
-  	virtual MatrixXd z();
 
   	nav_msgs::Odometry::ConstPtr getMsg();
 

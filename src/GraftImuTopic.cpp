@@ -46,13 +46,53 @@ void GraftImuTopic::callback(const sensor_msgs::Imu::ConstPtr& msg){
 	msg_ = msg;
 }
 
-MatrixXd GraftImuTopic::h(graft::GraftState& state){
-  Matrix<double, 1, 1> out;
-  out(0) = state.twist.angular.z;
+void GraftImuTopic::setName(const std::string& name){
+	std::cout << name << std::endl;
+	name_ = name;
+	std::cout << name_ << std::endl;
+}
+
+std::string GraftImuTopic::getName(){
+	return name_;
+}
+
+graft::GraftSensorResidual::Ptr GraftImuTopic::h(const graft::GraftState& state){
+	graft::GraftSensorResidual::Ptr out(new graft::GraftSensorResidual());
+	///< @TODO Might need to add NaN check system here for validity
+	out->header = state.header;
+	out->name = name_;
+	out->pose = state.pose;
+	out->twist = state.twist;
+	out->twist_covariance[0] = -1;
+	out->twist_covariance[35] = 1;
   return out;
 }
 
-MatrixXd GraftImuTopic::H(graft::GraftState& state){
+graft::GraftSensorResidual::Ptr GraftImuTopic::z(){
+	if(msg_ == NULL){ ///< @TODO If timeout, return NULL
+		return graft::GraftSensorResidual::Ptr();
+	}
+	graft::GraftSensorResidual::Ptr out(new graft::GraftSensorResidual());
+	out->header = msg_->header;
+	out->name = name_;
+	out->pose.orientation = msg_->orientation;
+	out->twist.angular = msg_->angular_velocity;
+	out->accel = msg_->linear_acceleration;
+	///< @TODO Write function to copy covariances between arrays
+	//out->orientation_covariance = orientation_covariance_;
+	//out->angular_velocity_covariance = angular_velocity_covariance_;
+	out->twist_covariance[0] = -1;
+  out->twist_covariance[35] = 0.000001;
+	out->accel_covariance = linear_acceleration_covariance_;
+	//if(msg_ != NULL){ ///< @TODO CHECK FOR SMALL/NEGATIVE COVARIANCE (out.diagonal().sum() < 0.001) All zero and we shouldn't have negative values, use from message
+	//	//out->orientation_covariance = msg_->orientation_covariance;
+	//	//out->angular_velocity_covariance = msg_->angular_velocity_covariance;
+	//	out->accel_covariance = msg_->linear_acceleration_covariance;
+	//}
+  return out;
+}
+
+/*MatrixXd GraftImuTopic::H(graft::GraftState& state){
   Matrix<double, 1, 2> out;
   out(0) = 0;
   out(1) = 1;
@@ -73,29 +113,21 @@ MatrixXd GraftImuTopic::R(){
 	return out;
 }
 
-MatrixXd GraftImuTopic::z(){
-  Matrix<double, 1, 1> out;
-  if(msg_ != NULL){
-    out(0) = msg_->angular_velocity.z;
-  }
-  return out;
-}
-
 void GraftImuTopic::useAbsoluteOrientation(bool absolute_orientation){
 	absolute_orientation_ = absolute_orientation;
-}
+}*/
 
 void GraftImuTopic::useDeltaOrientation(bool delta_orientation){
 	delta_orientation_ = delta_orientation;
 }
 
-void GraftImuTopic::useVelocities(bool use_velocities){
+/*void GraftImuTopic::useVelocities(bool use_velocities){
 	use_velocities_ = use_velocities;
 }
 
 void GraftImuTopic::useAccelerations(bool use_accelerations){
 	use_accelerations_ = use_accelerations;
-}
+}*/
 
 void GraftImuTopic::setTimeout(double timeout){
 	timeout_ = timeout;

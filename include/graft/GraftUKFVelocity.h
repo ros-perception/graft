@@ -31,10 +31,12 @@
  * Author: Chad Rockey
  */
 
-#ifndef GRAFT_EKFVELOCITY_H
-#define GRAFT_EKFVELOCITY_H
+#ifndef GRAFT_UKFVELOCITY_H
+#define GRAFT_UKFVELOCITY_H
 
 #include <Eigen/Dense>
+#include <Eigen/Cholesky>
+
 #include <graft/GraftState.h>
 #include <nav_msgs/Odometry.h>
 #include <geometry_msgs/QuaternionStamped.h>
@@ -43,18 +45,17 @@
  #include <graft/GraftSensor.h>
 
 #define SIZE 2  // State size: vx, wz
-#define MEAS_SIZE 2  // Measurement size: vx, wz
 
 using namespace Eigen;
 
-class GraftEKFVelocity{
+class GraftUKFVelocity{
   public:
-    GraftEKFVelocity();
-    ~GraftEKFVelocity();
+    GraftUKFVelocity();
+    ~GraftUKFVelocity();
 
-	Matrix<double, SIZE, 1> f(Matrix<double, SIZE, 1> x, Matrix<double, SIZE, 1> u, double dt);
+	MatrixXd f(MatrixXd x, double dt);
 
-	Matrix<double, SIZE, SIZE> getF(Matrix<double, SIZE, 1> x, Matrix<double, SIZE, 1> u, double dt);
+	std::vector<MatrixXd > predict_sigma_points(std::vector<MatrixXd >& sigma_points, double dt);
 
 	graft::GraftStatePtr getMessageFromState();
 
@@ -68,14 +69,18 @@ class GraftEKFVelocity{
     
   private:
 
-    Matrix<double, SIZE, 1> graft_state;
-	Matrix<double, SIZE, 1> graft_control;
-	Matrix<double, SIZE, SIZE> graft_covariance;
+    Matrix<double, SIZE, 1> graft_state_;
+	Matrix<double, SIZE, 1> graft_control_;
+	Matrix<double, SIZE, SIZE> graft_covariance_;
 
 	Matrix<double, SIZE, SIZE> Q_;
 
     ros::Time last_update_time_;
     ros::Time last_imu_time_;
+
+    double alpha_;
+    double beta_;
+    double kappa_;
 
     std::vector<boost::shared_ptr<GraftSensor> > topics_;
 };

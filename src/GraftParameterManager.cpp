@@ -66,9 +66,9 @@ void GraftParameterManager::parseNavMsgsOdometryParameters(ros::NodeHandle& tnh,
 	include_pose_ = include_pose_ || absolute_pose;
 
 	// Apply to sensor
-	odom->useAbsolutePose(absolute_pose);
+	//odom->useAbsolutePose(absolute_pose);
 	odom->useDeltaPose(delta_pose);
-	odom->useVelocities(use_velocities);
+	//odom->useVelocities(use_velocities);
   odom->setTimeout(timeout);
 
   //ROS_INFO("Abs pose: %d\nDelta pose: %d\nUse Vel: %d\nTimeout: %.3f", absolute_pose, delta_pose, use_velocities, timeout);
@@ -127,10 +127,10 @@ void GraftParameterManager::parseSensorMsgsIMUParameters(ros::NodeHandle& tnh, b
 	include_pose_ = include_pose_ || absolute_orientation;
 
 	// Apply to sensor
-	imu->useAbsoluteOrientation(absolute_orientation);
+	//imu->useAbsoluteOrientation(absolute_orientation);
 	imu->useDeltaOrientation(delta_orientation);
-	imu->useVelocities(use_velocities);
-	imu->useAccelerations(use_accelerations);
+	//imu->useVelocities(use_velocities);
+	//imu->useAccelerations(use_accelerations);
   imu->setTimeout(timeout);
 
   ROS_INFO("Abs orientation: %d\nDelta orientation: %d\nUse Vel: %d\nTimeout: %.3f", absolute_orientation, delta_orientation, use_velocities, timeout);
@@ -250,6 +250,7 @@ void GraftParameterManager::loadParameters(std::vector<boost::shared_ptr<GraftSe
 
       	// Create Odometry object
       	boost::shared_ptr<GraftOdometryTopic> odom(new GraftOdometryTopic(topic_name));
+        odom->setName(topic_name);
       	topics.push_back(odom);	
 
       	// Subscribe to topic
@@ -267,6 +268,7 @@ void GraftParameterManager::loadParameters(std::vector<boost::shared_ptr<GraftSe
 
       	// Create Odometry object
       	boost::shared_ptr<GraftImuTopic> imu(new GraftImuTopic(topic_name));
+        imu->setName(topic_name);
       	topics.push_back(imu);	
 
       	// Subscribe to topic

@@ -37,12 +37,12 @@
 #include <graft/GraftParameterManager.h>
 #include <graft/GraftSensor.h>
 #include <graft/GraftOdometryTopic.h>
- #include <graft/GraftImuTopic.h>
-#include <graft/GraftEKFVelocity.h>
+#include <graft/GraftImuTopic.h>
+#include <graft/GraftUKFVelocity.h>
 #include <graft/GraftState.h>
 #include <tf/transform_broadcaster.h>
 
-GraftEKFVelocity ekfv;
+GraftUKFVelocity ukfv;
 
 ros::Publisher state_pub;
 ros::Publisher odom_pub;
@@ -68,19 +68,19 @@ void publishTF(const nav_msgs::Odometry& msg){
 }
 
 void timer_callback(const ros::TimerEvent& event){
-	double dt = ekfv.predictAndUpdate();
+	double dt = ukfv.predictAndUpdate();
 
-	graft::GraftState state = *ekfv.getMessageFromState();
+	graft::GraftState state = *ukfv.getMessageFromState();
 	state.header.stamp = ros::Time::now();
 	state_pub.publish(state);
 
 	odom_.header.stamp = ros::Time::now();
-	odom_.header.frame_id = "odom_fused_ekfv";
+	odom_.header.frame_id = "odom_fused_ukfv";
 	odom_.child_frame_id = "base_link";
 	odom_.twist.twist.linear.x = state.twist.linear.x;
 	odom_.twist.twist.angular.z = state.twist.angular.z;
 
-	 // Update Odometry
+	// Update Odometry
 	double diff = pow(odom_.pose.pose.orientation.w, 2.0)-pow(odom_.pose.pose.orientation.z, 2.0);
 	double mult = 2.0*odom_.pose.pose.orientation.w*odom_.pose.pose.orientation.z;
 	double theta = atan2(mult, diff);
@@ -96,16 +96,16 @@ void timer_callback(const ros::TimerEvent& event){
 		theta = new_theta;
 	}
 	odom_.pose.pose.orientation.z = sin(theta/2.0);
-		odom_.pose.pose.orientation.w = cos(theta/2.0);
+	odom_.pose.pose.orientation.w = cos(theta/2.0);
 	odom_pub.publish(odom_);
 	if(publish_tf_){
-	    publishTF(odom_);
+	  publishTF(odom_);
 	}
 }
 
 int main(int argc, char **argv)
 {
-	ros::init(argc, argv, "graft_ekf_velocity");
+	ros::init(argc, argv, "graft_ukf_velocity");
 	ros::NodeHandle n;
 	ros::NodeHandle pnh("~");
 	state_pub = n.advertise<graft::GraftState>("state", 5);
@@ -121,8 +121,8 @@ int main(int argc, char **argv)
 
 	// Set up the E
 	boost::array<double, 4> Q = manager.getProcessNoise();
-	ekfv.setVelocityProcessNoise(Q);
-	ekfv.setTopics(topics);
+	ukfv.setVelocityProcessNoise(Q);
+	ukfv.setTopics(topics);
 
 	odom_.pose.pose.position.x = 0.0;
 	odom_.pose.pose.position.y = 0.0;
@@ -141,7 +141,7 @@ int main(int argc, char **argv)
 	odom_.twist.twist.angular.z = 0.0;
 
 	// Tf Broadcaster
-    broadcaster_.reset(new tf::TransformBroadcaster());
+  broadcaster_.reset(new tf::TransformBroadcaster());
 
 	// Start loop
 	ros::Timer timer = n.createTimer(ros::Duration(1.0/manager.getUpdateRate()), timer_callback);

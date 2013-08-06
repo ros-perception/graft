@@ -49,7 +49,7 @@ topics: {
   },
 
   base_imu: {
-    topic: /imu,
+    topic: /imu_integrated,
     type: sensor_msgs/Imu,
     absolute_orientation: False, # Overrides delta_orientation
     delta_orientation: False, # Overrides use_velocities
