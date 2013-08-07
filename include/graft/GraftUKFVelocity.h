@@ -44,7 +44,7 @@
 #include <tf/transform_datatypes.h>
  #include <graft/GraftSensor.h>
 
-#define SIZE 2  // State size: vx, wz
+#define SIZE 3  // State size: vx, vy, wz
 
 using namespace Eigen;
 
@@ -65,7 +65,7 @@ class GraftUKFVelocity{
 
 	void setTopics(std::vector<boost::shared_ptr<GraftSensor> >& topics);
 
-	void setVelocityProcessNoise(boost::array<double, 4>& Q);
+	void setProcessNoise(std::vector<double>& Q);
     
   private:
 

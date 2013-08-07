@@ -38,6 +38,7 @@
 #include <ros/ros.h>
 #include <Eigen/Dense>
 #include <sensor_msgs/Imu.h>
+ #include <numeric>
 
 using namespace Eigen;
 

@@ -199,14 +199,11 @@ void GraftParameterManager::loadParameters(std::vector<boost::shared_ptr<GraftSe
 	// Process noise covariance
 	XmlRpc::XmlRpcValue xml_Q;
   if (pnh_.getParam("Q", xml_Q)){
-  	if(xml_Q.size() == 4){ // Only supporting velocity for now
-	    for(size_t i = 0; i < xml_Q.size(); i++){
-	      std::stringstream ss; // Convert the list element into doubles
-	      ss << xml_Q[i];
-	      ss >> Q_[i] ? Q_[i] : 0;
-	    }
-    } else {
-    	ROS_WARN("%s/Q (process noise covariance) parameter requires 4 elements, skipping.", pnh_.getNamespace().c_str());
+    Q_.resize(xml_Q.size());
+    for(size_t i = 0; i < xml_Q.size(); i++){
+      std::stringstream ss; // Convert the list element into doubles
+      ss << xml_Q[i];
+      ss >> Q_[i] ? Q_[i] : 0;
     }
   }
 
@@ -326,6 +323,6 @@ bool GraftParameterManager::getIncludePose(){
 	return include_pose_;
 }
 
-boost::array<double, 4> GraftParameterManager::getProcessNoise(){
+std::vector<double> GraftParameterManager::getProcessNoise(){
 	return Q_;
 }

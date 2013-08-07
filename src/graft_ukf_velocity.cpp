@@ -120,8 +120,8 @@ int main(int argc, char **argv)
 	manager.loadParameters(topics, subs);
 
 	// Set up the E
-	boost::array<double, 4> Q = manager.getProcessNoise();
-	ukfv.setVelocityProcessNoise(Q);
+	std::vector<double> Q = manager.getProcessNoise();
+	ukfv.setProcessNoise(Q);
 	ukfv.setTopics(topics);
 
 	odom_.pose.pose.position.x = 0.0;
@@ -141,7 +141,7 @@ int main(int argc, char **argv)
 	odom_.twist.twist.angular.z = 0.0;
 
 	// Tf Broadcaster
-  broadcaster_.reset(new tf::TransformBroadcaster());
+    broadcaster_.reset(new tf::TransformBroadcaster());
 
 	// Start loop
 	ros::Timer timer = n.createTimer(ros::Duration(1.0/manager.getUpdateRate()), timer_callback);

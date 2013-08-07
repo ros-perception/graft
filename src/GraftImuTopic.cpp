@@ -58,14 +58,28 @@ std::string GraftImuTopic::getName(){
 
 graft::GraftSensorResidual::Ptr GraftImuTopic::h(const graft::GraftState& state){
 	graft::GraftSensorResidual::Ptr out(new graft::GraftSensorResidual());
-	///< @TODO Might need to add NaN check system here for validity
 	out->header = state.header;
 	out->name = name_;
 	out->pose = state.pose;
 	out->twist = state.twist;
-	out->twist_covariance[0] = -1;
-	out->twist_covariance[35] = 1;
   return out;
+}
+
+boost::array<double, 36> largeCovarianceFromSmallCovariance(const boost::array<double, 9>& angular_velocity_covariance){
+	boost::array<double, 36> out;
+	for(size_t i = 0; i < out.size(); i++){
+		out[i] = 0;
+	}
+	for(size_t i = 0; i < 3; i++){
+		out[i+21] = angular_velocity_covariance[i];
+	}
+	for(size_t i = 3; i < 6; i++){
+		out[i+24] = angular_velocity_covariance[i];
+	}
+	for(size_t i = 6; i < 9; i++){
+		out[i+27] = angular_velocity_covariance[i];
+	}
+	return out;
 }
 
 graft::GraftSensorResidual::Ptr GraftImuTopic::z(){
@@ -77,57 +91,29 @@ graft::GraftSensorResidual::Ptr GraftImuTopic::z(){
 	out->name = name_;
 	out->pose.orientation = msg_->orientation;
 	out->twist.angular = msg_->angular_velocity;
+	out->twist.angular.z = -out->twist.angular.z;
 	out->accel = msg_->linear_acceleration;
-	///< @TODO Write function to copy covariances between arrays
-	//out->orientation_covariance = orientation_covariance_;
-	//out->angular_velocity_covariance = angular_velocity_covariance_;
-	out->twist_covariance[0] = -1;
-  out->twist_covariance[35] = 0.000001;
-	out->accel_covariance = linear_acceleration_covariance_;
-	//if(msg_ != NULL){ ///< @TODO CHECK FOR SMALL/NEGATIVE COVARIANCE (out.diagonal().sum() < 0.001) All zero and we shouldn't have negative values, use from message
-	//	//out->orientation_covariance = msg_->orientation_covariance;
-	//	//out->angular_velocity_covariance = msg_->angular_velocity_covariance;
-	//	out->accel_covariance = msg_->linear_acceleration_covariance;
-	//}
-  return out;
-}
-
-/*MatrixXd GraftImuTopic::H(graft::GraftState& state){
-  Matrix<double, 1, 2> out;
-  out(0) = 0;
-  out(1) = 1;
-  return out;
-}
-
-MatrixXd GraftImuTopic::y(graft::GraftState& predicted){
-	MatrixXd meas = z();
-	return meas - h(predicted);
-}
-
-MatrixXd GraftImuTopic::R(){
-  Matrix<double, 1, 1> out;
-	out(0) = angular_velocity_covariance_[8]; // Wz
-	if(msg_ != NULL && out.diagonal().sum() < 0.001){ // All zero and we shouldn't have negative values, use from message
-		out(0) = msg_->angular_velocity_covariance[8]; // Wz
+	if(std::accumulate(orientation_covariance_.begin(),orientation_covariance_.end(),0.0) > 1e-15){ // Override message
+		out->pose_covariance = largeCovarianceFromSmallCovariance(orientation_covariance_);
+	} else { // Use from message
+		out->pose_covariance = largeCovarianceFromSmallCovariance(msg_->orientation_covariance);
 	}
-	return out;
+	if(std::accumulate(angular_velocity_covariance_.begin(),angular_velocity_covariance_.end(),0.0) > 1e-15){ // Override message
+		out->twist_covariance = largeCovarianceFromSmallCovariance(angular_velocity_covariance_);
+	} else { // Use from message
+		out->twist_covariance = largeCovarianceFromSmallCovariance(msg_->angular_velocity_covariance);
+	}
+	if(std::accumulate(linear_acceleration_covariance_.begin(),linear_acceleration_covariance_.end(),0.0) > 1e-15){ // Override message
+		out->accel_covariance = linear_acceleration_covariance_;
+	} else { // Use from message
+		out->accel_covariance = msg_->linear_acceleration_covariance;
+	}
+  return out;
 }
-
-void GraftImuTopic::useAbsoluteOrientation(bool absolute_orientation){
-	absolute_orientation_ = absolute_orientation;
-}*/
 
 void GraftImuTopic::useDeltaOrientation(bool delta_orientation){
 	delta_orientation_ = delta_orientation;
 }
-
-/*void GraftImuTopic::useVelocities(bool use_velocities){
-	use_velocities_ = use_velocities;
-}
-
-void GraftImuTopic::useAccelerations(bool use_accelerations){
-	use_accelerations_ = use_accelerations;
-}*/
 
 void GraftImuTopic::setTimeout(double timeout){
 	timeout_ = timeout;

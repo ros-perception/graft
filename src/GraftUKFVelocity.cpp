@@ -39,6 +39,9 @@
 	graft_control_.setZero();
 	graft_covariance_.setIdentity();
 	Q_.setZero();
+	Q_(0,0) = 0.25;
+	Q_(1,1) = 0.25;
+	Q_(2,2) = 0.25;
 	alpha_ = 0.001;
 	kappa_ = 0.0;
 	beta_ = 2.0;
@@ -65,8 +68,6 @@ std::vector<MatrixXd > generateSigmaPoints(MatrixXd state, MatrixXd covariance, 
 
 	double gamma = std::sqrt((state.rows()+lambda));
 	MatrixXd sig_sqrt = gamma*matrixSqrt(covariance);
-	//std::cout << (state.rows()+lambda)*(covariance) << std::endl;
-	//std::cout << sig_sqrt << std::endl;
 
 	// i = 0, push back state as is
 	out.push_back(state);
@@ -80,13 +81,6 @@ std::vector<MatrixXd > generateSigmaPoints(MatrixXd state, MatrixXd covariance, 
 	for(size_t i = state.rows() + 1; i <= 2*state.rows(); i++){
 		out.push_back(state - sig_sqrt.col(i-(state.rows()+1)));
 	}
-	
-	/*std::cout << "---" << std::endl;
-	for(size_t i = 0; i < out.size(); i++){
-		std::cout << out[i] << std::endl;
-		std::cout << "-" << std::endl;
-	}*/
-
 	return out;
 }
 
@@ -97,7 +91,6 @@ MatrixXd meanFromSigmaPoints(std::vector<MatrixXd >& sigma_points, double n, dou
 	for(size_t i = 1; i <= 2*n; i++){
 		out = out + weight_i * sigma_points[i];
 	}
-	std::cout << "mean:\n" << out << std::endl;
 	return out;
 }
 
@@ -109,8 +102,6 @@ MatrixXd covarianceFromSigmaPoints(std::vector<MatrixXd >& sigma_points, MatrixX
 	for(size_t i = 1; i <= 2*n; i++){
 		out = out + weight_i  * (sigma_points[i] - mean) * (sigma_points[i] - mean).transpose();
 	}
-	std::cout << "cov:\n" << out << std::endl;
-	std::cout << "covQ:\n" << out + process_noise << std::endl;
 	return out+process_noise;
 }
 
@@ -122,7 +113,6 @@ MatrixXd crossCovariance(std::vector<MatrixXd >& sigma_points, MatrixXd& mean, s
 	for(size_t i = 1; i <= 2*n; i++){
 		out = out + weight_i  * (sigma_points[i] - mean) * (meas_sigma_points[i] - meas_mean).transpose();
 	}
-	std::cout << "crosscov:\n" << out << std::endl;
 	return out;
 }
 
@@ -137,7 +127,6 @@ MatrixXd GraftUKFVelocity::f(MatrixXd x, double dt){
 
 VectorXd hFromSensors(std::vector<graft::GraftSensorResidual::ConstPtr>& res){
 	VectorXd out;
-	std::cout << "HSENSORS" << res.size() << std::endl;
 	for(size_t i = 0; i < res.size(); i++){
 		std::cout << "name: " << res[i]->name << std::endl;
 		// Linear Velocity X
@@ -159,36 +148,9 @@ VectorXd hFromSensors(std::vector<graft::GraftSensorResidual::ConstPtr>& res){
 graft::GraftState::ConstPtr stateMsgFromMatrix(const MatrixXd& state){
 	graft::GraftState::Ptr out(new graft::GraftState());
 	out->twist.linear.x = state(0);
-	out->twist.angular.z = state(1);
+	out->twist.linear.y = state(1);
+	out->twist.angular.z = state(2);
 	return out;
-}
-
-/*std::vector<MatrixXd> h(std::vector<MatrixXd >& sigma_points, std::vector<boost::shared_ptr<GraftSensor> >& topics){
-	std::vector<MatrixXd > out;
-	for(size_t i = 0; i < sigma_points.size(); i++){
-		std::vector<graft::GraftSensorResidual::ConstPtr> residuals;
-		graft::GraftState::ConstPtr state_msg = stateMsgFromMatrix(sigma_points[i]);
-		for(size_t j = 0; j < topics.size(); j++){
-			residuals.push_back(topics[j]->h(*state_msg));
-		}
-		out.push_back(hFromSensors(residuals));
-	}
-	std::cout << "Zt:"<< std::endl;
-	std::cout << "---" << std::endl;
-	for(size_t i = 0; i < out.size(); i++){
-		std::cout << out[i] << std::endl;
-		std::cout << "-" << std::endl;
-	}
-	return out;
-}*/
-
-MatrixXd getMeasurement(std::vector<boost::shared_ptr<GraftSensor> >& topics){
-	std::vector<graft::GraftSensorResidual::ConstPtr> residuals;
-	for(size_t j = 0; j < topics.size(); j++){
-		residuals.push_back(topics[j]->z());
-	}
-	std::cout << "MEAS:~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n" << hFromSensors(residuals) << std::endl;
-	return hFromSensors(residuals);
 }
 
 std::vector<MatrixXd > GraftUKFVelocity::predict_sigma_points(std::vector<MatrixXd >& sigma_points, double dt){
@@ -206,7 +168,8 @@ graft::GraftStatePtr GraftUKFVelocity::getMessageFromState(){
 graft::GraftStatePtr GraftUKFVelocity::getMessageFromState(Matrix<double, SIZE, 1>& state, Matrix<double, SIZE, SIZE>& covariance){
 	graft::GraftStatePtr msg(new graft::GraftState());
 	msg->twist.linear.x = state(0);
-	msg->twist.angular.z = state(1);
+	msg->twist.linear.y = state(1);
+	msg->twist.angular.z = state(2);
 
 	for(size_t i = 0; i < SIZE*SIZE; i++){
 		msg->covariance[i] = covariance(i);
@@ -265,9 +228,17 @@ VectorXd getMeasurements(const std::vector<boost::shared_ptr<GraftSensor> >& top
 			std::cout << "vx" << std::endl;
 			actual_measurement = addElementToVector(actual_measurement, meas->twist.linear.x);
 			innovation_covariance_diagonal = addElementToVector(innovation_covariance_diagonal, meas->twist_covariance[0]);
-			std::cout << "vec:\n" << innovation_covariance_diagonal << std::endl;
 			for(size_t j = 0; j < residuals_msgs.size(); j++){
 				output_measurement_sigmas[j] = addElementToColumnMatrix(output_measurement_sigmas[j], residuals_msgs[j]->twist.linear.x);
+			}
+		}
+		// Linear Velocity Y
+		if(meas->twist_covariance[7] > 1e-20){
+			std::cout << "vy" << std::endl;
+			actual_measurement = addElementToVector(actual_measurement, meas->twist.linear.y);
+			innovation_covariance_diagonal = addElementToVector(innovation_covariance_diagonal, meas->twist_covariance[7]);
+			for(size_t j = 0; j < residuals_msgs.size(); j++){
+				output_measurement_sigmas[j] = addElementToColumnMatrix(output_measurement_sigmas[j], residuals_msgs[j]->twist.linear.y);
 			}
 		}
 		// Angular Velocity Z
@@ -275,7 +246,6 @@ VectorXd getMeasurements(const std::vector<boost::shared_ptr<GraftSensor> >& top
 			std::cout << "wz" << std::endl;
 			actual_measurement = addElementToVector(actual_measurement, meas->twist.angular.z);
 			innovation_covariance_diagonal = addElementToVector(innovation_covariance_diagonal, meas->twist_covariance[35]);
-			std::cout << "vec:\n" << innovation_covariance_diagonal << std::endl;
 			for(size_t j = 0; j < residuals_msgs.size(); j++){
 				output_measurement_sigmas[j] = addElementToColumnMatrix(output_measurement_sigmas[j], residuals_msgs[j]->twist.angular.z);
 			}
@@ -310,6 +280,7 @@ double GraftUKFVelocity::predictAndUpdate(){
 	std::vector<MatrixXd > previous_sigma_points = generateSigmaPoints(graft_state_, graft_covariance_, lambda);
 	std::vector<MatrixXd > predicted_sigma_points = predict_sigma_points(previous_sigma_points, 0.0);
 	MatrixXd predicted_mean = meanFromSigmaPoints(predicted_sigma_points, graft_state_.rows(), lambda);
+	std::cout << "Q:\n" << Q_ << std::endl;
 	MatrixXd predicted_covariance = covarianceFromSigmaPoints(predicted_sigma_points, predicted_mean, Q_, graft_state_.rows(), alpha_, beta_, lambda);
 	std::cout << "---------" << std::endl;
 
@@ -344,9 +315,14 @@ void GraftUKFVelocity::setTopics(std::vector<boost::shared_ptr<GraftSensor> >& t
 	topics_ = topics;
 }
 
-void GraftUKFVelocity::setVelocityProcessNoise(boost::array<double, 4>& Q){
-	Q_.resize(std::sqrt(Q.size()),std::sqrt(Q.size()));
+void GraftUKFVelocity::setProcessNoise(std::vector<double>& Q){
 	Q_.setZero();
+	if(Q.size() != Q_.size()){
+		ROS_ERROR("Process noise parameter 'Q' is size %zu, expected %zu.\nUsing 0.1*Identity.", Q.size(), Q_.size());
+		Q_.setIdentity();
+		Q_ = 0.1 * Q_;
+		return;
+	}
 	for(size_t i = 0; i < Q.size(); i++){
 		Q_(i) = Q[i];
 	}

@@ -38,6 +38,7 @@
 #include <ros/ros.h>
 #include <Eigen/Dense>
 #include <nav_msgs/Odometry.h>
+#include <numeric>
 
 using namespace Eigen;
 

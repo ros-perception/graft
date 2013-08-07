@@ -70,7 +70,7 @@ class GraftParameterManager{
 
     bool getIncludePose();
 
-    boost::array<double, 4> getProcessNoise();
+    std::vector<double> getProcessNoise();
 
   private:
     
@@ -85,7 +85,7 @@ class GraftParameterManager{
     std::string update_topic_; // Update when this topic arrives
     double dt_override_; // Overrides the dt between updates, ignored if 0
     int queue_size_;
-    boost::array<double, 4> Q_;
+    std::vector<double> Q_;
 
     // Derived parameters for filter behavior
     bool include_pose_;
