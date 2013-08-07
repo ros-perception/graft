@@ -78,6 +78,7 @@ void timer_callback(const ros::TimerEvent& event){
 	odom_.header.frame_id = "odom_fused_ukfv";
 	odom_.child_frame_id = "base_link";
 	odom_.twist.twist.linear.x = state.twist.linear.x;
+	odom_.twist.twist.linear.y = state.twist.linear.y;
 	odom_.twist.twist.angular.z = state.twist.angular.z;
 
 	// Update Odometry
@@ -85,14 +86,17 @@ void timer_callback(const ros::TimerEvent& event){
 	double mult = 2.0*odom_.pose.pose.orientation.w*odom_.pose.pose.orientation.z;
 	double theta = atan2(mult, diff);
 	if(std::abs(odom_.twist.twist.angular.z) < 0.00001){ // There's no (or very little) curvature, apply the straight line model
-		odom_.pose.pose.position.x += odom_.twist.twist.linear.x*dt*cos(theta);
-		odom_.pose.pose.position.y += odom_.twist.twist.linear.x*dt*sin(theta);
+		odom_.pose.pose.position.x += odom_.twist.twist.linear.x*dt*cos(theta)-odom_.twist.twist.linear.y*dt*sin(theta);
+		odom_.pose.pose.position.y += odom_.twist.twist.linear.x*dt*sin(theta)+odom_.twist.twist.linear.y*dt*cos(theta);
 	} else { // Calculate components of arc distance and add distances.
-		double curvature = odom_.twist.twist.linear.x/odom_.twist.twist.angular.z;
+		double curvature_x = odom_.twist.twist.linear.x/odom_.twist.twist.angular.z;
+		double curvature_y = odom_.twist.twist.linear.y/odom_.twist.twist.angular.z;
 		double new_theta = theta + odom_.twist.twist.angular.z*dt;
 
-		odom_.pose.pose.position.x += -curvature*sin(theta) + curvature*sin(new_theta);
-		odom_.pose.pose.position.y += curvature*cos(theta) - curvature*cos(new_theta);
+		odom_.pose.pose.position.x += -curvature_x*sin(theta) + curvature_x*sin(new_theta);
+		odom_.pose.pose.position.x += -curvature_y*cos(theta) + curvature_y*cos(new_theta);
+		odom_.pose.pose.position.y += curvature_x*cos(theta) - curvature_x*cos(new_theta);
+		odom_.pose.pose.position.y += -curvature_y*sin(theta) + curvature_y*sin(new_theta);
 		theta = new_theta;
 	}
 	odom_.pose.pose.orientation.z = sin(theta/2.0);

@@ -268,6 +268,9 @@ double GraftUKFVelocity::predictAndUpdate(){
 	graft_state_ = predicted_mean + K*(z - predicted_measurement);
 	graft_covariance_ = predicted_covariance - K*predicted_measurement_uncertainty*K.transpose();
 
+	std::cout << graft_state_ << std::endl;
+	std::cout << "---------" << std::endl;
+
 	return dt;
 }
 

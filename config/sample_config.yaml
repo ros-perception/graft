@@ -23,7 +23,7 @@ Q: [1e6, 0, 0,
 
 topics: {
   base_odometry: {
-    topic: /odom,
+    topic: /pr2_base_odometry/odom,
     type: nav_msgs/Odometry,
     absolute_pose: False, # Overrides delta_pose
     delta_pose: False, # Overrides use_velocities
@@ -41,16 +41,16 @@ topics: {
 
     # Row major 6x6: vx, vy, vz, wx, wy, wz
     # Read from message if all zero
-    override_twist_covariance: [0.001, 0, 0, 0, 0, 0,
+    override_twist_covariance: [0, 0, 0, 0, 0, 0,
                                 0, 0, 0, 0, 0, 0,
                                 0, 0, 0, 0, 0, 0,
                                 0, 0, 0, 0, 0, 0,
                                 0, 0, 0, 0, 0, 0,
-                                0, 0, 0, 0, 0, 0.01],
+                                0, 0, 0, 0, 0, 0],
   },
 
   base_imu: {
-    topic: /imu_integrated,
+    topic: /imu_data,
     type: sensor_msgs/Imu,
     absolute_orientation: False, # Overrides delta_orientation
     delta_orientation: False, # Overrides use_velocities
@@ -68,7 +68,7 @@ topics: {
     # Read from message if all zero
     override_angular_velocity_covariance: [0, 0, 0,
                                            0, 0, 0,
-                                           0, 0, 0.0001],
+                                           0, 0, 0.00000027],
 
     # Row major 3x3: ax, ay, az
     # Read from message if all zero
