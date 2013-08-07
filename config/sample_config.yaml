@@ -7,7 +7,7 @@ parent_frame_id: odom # TF frame id, override output_frame if set
 child_frame_id: base_link #TF frame id
 
 freq: 30.0 # In Hz, param name ported from robot_pose_ekf
-update_rate: 50.0 #Overides 'freq' if set, in Hz
+update_rate: 100.0 #Overides 'freq' if set, in Hz
 update_topic: odom # Which topic to trigger updates, if blank, uses timed update_rate, if '*', will trigger on all new topics
 
 dt_override : 0.0 # Override the dt for update_rate or update_topic, ignored if 0
@@ -17,13 +17,13 @@ queue_size: 1
 publish_tf: false
 
 # Process noise covariance 2x2 for velocites, 5x5 for 2d position
-Q: [0.25, 0, 0,
-    0, 0.25, 0,
-    0, 0, 0.25]
+Q: [1e6, 0, 0,
+    0, 1e6, 0,
+    0, 0, 1e6]
 
 topics: {
   base_odometry: {
-    topic: /pr2_base_odometry/odom,
+    topic: /odom,
     type: nav_msgs/Odometry,
     absolute_pose: False, # Overrides delta_pose
     delta_pose: False, # Overrides use_velocities
@@ -41,16 +41,16 @@ topics: {
 
     # Row major 6x6: vx, vy, vz, wx, wy, wz
     # Read from message if all zero
-    override_twist_covariance: [0, 0, 0, 0, 0, 0,
+    override_twist_covariance: [0.001, 0, 0, 0, 0, 0,
                                 0, 0, 0, 0, 0, 0,
                                 0, 0, 0, 0, 0, 0,
                                 0, 0, 0, 0, 0, 0,
                                 0, 0, 0, 0, 0, 0,
-                                0, 0, 0, 0, 0, 0],
+                                0, 0, 0, 0, 0, 0.01],
   },
 
   base_imu: {
-    topic: /imu_data,
+    topic: /imu_integrated,
     type: sensor_msgs/Imu,
     absolute_orientation: False, # Overrides delta_orientation
     delta_orientation: False, # Overrides use_velocities

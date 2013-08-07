@@ -44,7 +44,7 @@ using namespace Eigen;
 
 class GraftImuTopic: public GraftSensor {
   public:
-  	GraftImuTopic(std::string& name);
+  	GraftImuTopic();
 
   	~GraftImuTopic();
 

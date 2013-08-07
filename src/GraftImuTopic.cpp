@@ -34,7 +34,7 @@
  #include <graft/GraftImuTopic.h>
 
 
-GraftImuTopic::GraftImuTopic(std::string& name): name_(name){
+GraftImuTopic::GraftImuTopic(){
 
 }
 
@@ -47,9 +47,7 @@ void GraftImuTopic::callback(const sensor_msgs::Imu::ConstPtr& msg){
 }
 
 void GraftImuTopic::setName(const std::string& name){
-	std::cout << name << std::endl;
 	name_ = name;
-	std::cout << name_ << std::endl;
 }
 
 std::string GraftImuTopic::getName(){
@@ -91,7 +89,6 @@ graft::GraftSensorResidual::Ptr GraftImuTopic::z(){
 	out->name = name_;
 	out->pose.orientation = msg_->orientation;
 	out->twist.angular = msg_->angular_velocity;
-	out->twist.angular.z = -out->twist.angular.z;
 	out->accel = msg_->linear_acceleration;
 	if(std::accumulate(orientation_covariance_.begin(),orientation_covariance_.end(),0.0) > 1e-15){ // Override message
 		out->pose_covariance = largeCovarianceFromSmallCovariance(orientation_covariance_);

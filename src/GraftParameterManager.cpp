@@ -246,7 +246,7 @@ void GraftParameterManager::loadParameters(std::vector<boost::shared_ptr<GraftSe
       	}
 
       	// Create Odometry object
-      	boost::shared_ptr<GraftOdometryTopic> odom(new GraftOdometryTopic(topic_name));
+      	boost::shared_ptr<GraftOdometryTopic> odom(new GraftOdometryTopic());
         odom->setName(topic_name);
       	topics.push_back(odom);	
 
@@ -264,7 +264,7 @@ void GraftParameterManager::loadParameters(std::vector<boost::shared_ptr<GraftSe
       	}
 
       	// Create Odometry object
-      	boost::shared_ptr<GraftImuTopic> imu(new GraftImuTopic(topic_name));
+      	boost::shared_ptr<GraftImuTopic> imu(new GraftImuTopic());
         imu->setName(topic_name);
       	topics.push_back(imu);	
 

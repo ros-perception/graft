@@ -44,7 +44,7 @@ using namespace Eigen;
 
 class GraftOdometryTopic: public GraftSensor {
   public:
-  	GraftOdometryTopic(std::string& name);
+  	GraftOdometryTopic();
 
   	~GraftOdometryTopic();
 

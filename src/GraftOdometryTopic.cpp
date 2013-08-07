@@ -34,8 +34,8 @@
  #include <graft/GraftOdometryTopic.h>
 
 
-GraftOdometryTopic::GraftOdometryTopic(std::string& name): name_(name), absolute_pose_(false), delta_pose_(false),
-                                                           use_velocities_(false), timeout_(1.0){
+GraftOdometryTopic::GraftOdometryTopic(): absolute_pose_(false), delta_pose_(false),
+                                          use_velocities_(false), timeout_(1.0){
 
 }
 
@@ -48,9 +48,7 @@ void GraftOdometryTopic::callback(const nav_msgs::Odometry::ConstPtr& msg){
 }
 
 void GraftOdometryTopic::setName(const std::string& name){
-	std::cout << name << std::endl;
 	name_ = name;
-	std::cout << name_ << std::endl;
 }
 
 std::string GraftOdometryTopic::getName(){
