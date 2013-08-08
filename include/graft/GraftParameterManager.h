@@ -70,7 +70,15 @@ class GraftParameterManager{
 
     bool getIncludePose();
 
+    bool getPublishTF();
+
     std::vector<double> getProcessNoise();
+
+    double getAlpha();
+
+    double getKappa();
+
+    double getBeta();
 
   private:
     
@@ -85,7 +93,11 @@ class GraftParameterManager{
     std::string update_topic_; // Update when this topic arrives
     double dt_override_; // Overrides the dt between updates, ignored if 0
     int queue_size_;
-    std::vector<double> Q_;
+    bool publish_tf_;
+    std::vector<double> process_noise_;
+    double alpha_;
+    double kappa_;
+    double beta_;
 
     // Derived parameters for filter behavior
     bool include_pose_;

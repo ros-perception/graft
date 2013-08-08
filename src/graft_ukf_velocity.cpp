@@ -115,16 +115,19 @@ int main(int argc, char **argv)
 	state_pub = n.advertise<graft::GraftState>("state", 5);
 	odom_pub = n.advertise<nav_msgs::Odometry>("odom_combined", 5);
 
-	pnh.param<bool>("publish_tf", publish_tf_, false); //< PUT ME IN PARAM MANAGER
-
 	// Load parameters
 	std::vector<boost::shared_ptr<GraftSensor> > topics;
 	std::vector<ros::Subscriber> subs;
 	GraftParameterManager manager(n, pnh);
 	manager.loadParameters(topics, subs);
 
+	publish_tf_ = manager.getPublishTF();
+
 	// Set up the E
 	std::vector<double> Q = manager.getProcessNoise();
+	ukfv.setAlpha(manager.getAlpha());
+	ukfv.setKappa(manager.getKappa());
+	ukfv.setBeta(manager.getBeta());
 	ukfv.setProcessNoise(Q);
 	ukfv.setTopics(topics);
 

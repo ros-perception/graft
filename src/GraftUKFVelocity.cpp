@@ -39,12 +39,6 @@
 	graft_control_.setZero();
 	graft_covariance_.setIdentity();
 	Q_.setZero();
-	Q_(0,0) = 0.25;
-	Q_(1,1) = 0.25;
-	Q_(2,2) = 0.25;
-	alpha_ = 0.001;
-	kappa_ = 0.0;
-	beta_ = 2.0;
  }
 
 GraftUKFVelocity::~GraftUKFVelocity(){
@@ -268,9 +262,6 @@ double GraftUKFVelocity::predictAndUpdate(){
 	graft_state_ = predicted_mean + K*(z - predicted_measurement);
 	graft_covariance_ = predicted_covariance - K*predicted_measurement_uncertainty*K.transpose();
 
-	std::cout << graft_state_ << std::endl;
-	std::cout << "---------" << std::endl;
-
 	return dt;
 }
 
@@ -291,3 +282,14 @@ void GraftUKFVelocity::setProcessNoise(std::vector<double>& Q){
 	}
 }
 
+void GraftUKFVelocity::setAlpha(const double alpha){
+	alpha_ = alpha;
+}
+
+void GraftUKFVelocity::setKappa(const double kappa){
+	kappa_ = kappa;
+}
+
+void GraftUKFVelocity::setBeta(const double beta){
+	beta_ = beta;
+}

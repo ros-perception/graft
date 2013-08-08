@@ -194,16 +194,22 @@ void GraftParameterManager::loadParameters(std::vector<boost::shared_ptr<GraftSe
 	pnh_.param<double>("update_rate", update_rate_, update_rate_); // Overrides 'freq'
 	pnh_.param<double>("dt_override", dt_override_, 0.0);
 
+  pnh_.param<bool>("publish_tf", publish_tf_, false);
+
 	pnh_.param<int>("queue_size", queue_size_, 1);
 
+  pnh_.param<double>("alpha", alpha_, 0.001);
+  pnh_.param<double>("kappa", kappa_, 0.0);
+  pnh_.param<double>("beta", beta_, 2.0);
+
 	// Process noise covariance
-	XmlRpc::XmlRpcValue xml_Q;
-  if (pnh_.getParam("Q", xml_Q)){
-    Q_.resize(xml_Q.size());
-    for(size_t i = 0; i < xml_Q.size(); i++){
+	XmlRpc::XmlRpcValue xml_process_noise;
+  if (pnh_.getParam("process_noise", xml_process_noise)){
+    process_noise_.resize(xml_process_noise.size());
+    for(size_t i = 0; i < xml_process_noise.size(); i++){
       std::stringstream ss; // Convert the list element into doubles
-      ss << xml_Q[i];
-      ss >> Q_[i] ? Q_[i] : 0;
+      ss << xml_process_noise[i];
+      ss >> process_noise_[i] ? process_noise_[i] : 0;
     }
   }
 
@@ -323,6 +329,22 @@ bool GraftParameterManager::getIncludePose(){
 	return include_pose_;
 }
 
+bool GraftParameterManager::getPublishTF(){
+  return publish_tf_;
+}
+
 std::vector<double> GraftParameterManager::getProcessNoise(){
-	return Q_;
+	return process_noise_;
+}
+
+double GraftParameterManager::getAlpha(){
+  return alpha_;
+}
+
+double GraftParameterManager::getKappa(){
+  return kappa_;
+}
+
+double GraftParameterManager::getBeta(){
+  return beta_;
 }

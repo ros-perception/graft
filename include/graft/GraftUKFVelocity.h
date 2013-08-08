@@ -66,6 +66,12 @@ class GraftUKFVelocity{
 	void setTopics(std::vector<boost::shared_ptr<GraftSensor> >& topics);
 
 	void setProcessNoise(std::vector<double>& Q);
+
+	void setAlpha(const double alpha);
+
+	void setKappa(const double kappa);
+
+	void setBeta(const double beta);
     
   private:
 
