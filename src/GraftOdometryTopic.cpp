@@ -55,6 +55,36 @@ std::string GraftOdometryTopic::getName(){
 	return name_;
 }
 
+void GraftOdometryTopic::clearMessage(){
+	msg_ = nav_msgs::Odometry::ConstPtr();
+}
+
+geometry_msgs::Twist::Ptr twistFromPoses(const geometry_msgs::Pose& pose, const geometry_msgs::Pose& last_pose, const double dt){
+	geometry_msgs::Twist::Ptr out(new geometry_msgs::Twist());
+	if(dt < 1e-10){
+		return out;
+	}
+	tf::Quaternion tfq2, tfq1;
+	tf::quaternionMsgToTF(pose.orientation, tfq2);
+  tf::quaternionMsgToTF(last_pose.orientation, tfq1);
+  tf::Transform tf2(tfq2, tf::Vector3(pose.position.x, pose.position.y, pose.position.z));
+  tf::Transform tf1(tfq1, tf::Vector3(last_pose.position.x, last_pose.position.y, last_pose.position.z));
+
+  tf::Transform dtf = tf1.inverse() * tf2;
+
+  out->linear.x = dtf.getOrigin().getX()/dt;
+  out->linear.y = dtf.getOrigin().getY()/dt;
+  out->linear.y = dtf.getOrigin().getZ()/dt;
+  double rX, rY, rZ;
+  dtf.getBasis().getEulerYPR(rZ, rY, rX);
+  out->angular.x = rX/dt;
+  out->angular.y = rY/dt;
+	out->angular.z = rZ/dt;
+
+	return out;
+}
+
+
 graft::GraftSensorResidual::Ptr GraftOdometryTopic::h(const graft::GraftState& state){
 	graft::GraftSensorResidual::Ptr out(new graft::GraftSensorResidual());
 	out->header = state.header;
@@ -66,23 +96,48 @@ graft::GraftSensorResidual::Ptr GraftOdometryTopic::h(const graft::GraftState& s
 
 graft::GraftSensorResidual::Ptr GraftOdometryTopic::z(){
 	if(msg_ == NULL){ ///< @TODO If timeout, return NULL
+		ROS_WARN_THROTTLE(5.0, "Odometry NULL");
 		return graft::GraftSensorResidual::Ptr();
 	}
 	graft::GraftSensorResidual::Ptr out(new graft::GraftSensorResidual());
 	out->header = msg_->header;
 	out->name = name_;
-	out->pose = msg_->pose.pose;
-	out->twist = msg_->twist.twist;
-	if(std::accumulate(pose_covariance_.begin(),pose_covariance_.end(),0.0) > 1e-15){ // Override message
-		out->pose_covariance = pose_covariance_;
-	} else { // Use from message
-		out->pose_covariance = msg_->pose.covariance;
+
+	if(delta_pose_){
+		if(last_msg_ == NULL){
+			last_msg_ = msg_;
+			return graft::GraftSensorResidual::Ptr();
+		}
+		double dt = (msg_->header.stamp - last_msg_->header.stamp).toSec();
+		out->twist = *twistFromPoses(msg_->pose.pose, last_msg_->pose.pose, dt);
+		last_msg_ = msg_;
+		if(std::accumulate(twist_covariance_.begin(),twist_covariance_.end(),0.0) > 1e-15){ // Override message
+			out->twist_covariance = twist_covariance_;
+		} else { // Use from message
+			// Not sure what to do about covariance here...... robot_pose_ekf was strange
+			out->twist_covariance = msg_->pose.covariance;
+		}
+	} else {
+		out->twist = msg_->twist.twist;
+		if(std::accumulate(twist_covariance_.begin(),twist_covariance_.end(),0.0) > 1e-15){ // Override message
+			out->twist_covariance = twist_covariance_;
+		} else { // Use from message
+			out->twist_covariance = msg_->twist.covariance;
+		}
 	}
-	if(std::accumulate(twist_covariance_.begin(),twist_covariance_.end(),0.0) > 1e-15){ // Override message
-		out->twist_covariance = twist_covariance_;
-	} else { // Use from message
-		out->twist_covariance = msg_->twist.covariance;
+
+	if(absolute_pose_ && !delta_pose_){ // Delta Pose and Absolute Pose are incompatible
+		out->pose = msg_->pose.pose;
+		if(std::accumulate(pose_covariance_.begin(),pose_covariance_.end(),0.0) > 1e-15){ // Override message
+			out->pose_covariance = pose_covariance_;
+		} else { // Use from message
+			out->pose_covariance = msg_->pose.covariance;
+		}
 	}
+
+
+	
+
   return out;
 }
 

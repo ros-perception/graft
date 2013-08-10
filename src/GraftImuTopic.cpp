@@ -54,6 +54,35 @@ std::string GraftImuTopic::getName(){
 	return name_;
 }
 
+void GraftImuTopic::clearMessage(){
+	msg_ = sensor_msgs::Imu::ConstPtr();
+}
+
+geometry_msgs::Twist::Ptr twistFromQuaternions(const geometry_msgs::Quaternion& quat, const geometry_msgs::Quaternion& last_quat, const double dt){
+	geometry_msgs::Twist::Ptr out(new geometry_msgs::Twist());
+	if(dt < 1e-10){
+		return out;
+	}
+	tf::Quaternion tfq2, tfq1;
+	tf::quaternionMsgToTF(quat, tfq2);
+  tf::quaternionMsgToTF(last_quat, tfq1);
+  tf::Transform tf2(tfq2, tf::Vector3(0, 0, 0));
+  tf::Transform tf1(tfq1, tf::Vector3(0, 0, 0));
+
+  tf::Transform dtf = tf1.inverse() * tf2;
+
+  out->linear.x = 0;
+  out->linear.y = 0;
+  out->linear.y = 0;
+  double rX, rY, rZ;
+  dtf.getBasis().getEulerYPR(rZ, rY, rX);
+  out->angular.x = rX/dt;
+  out->angular.y = rY/dt;
+	out->angular.z = rZ/dt;
+
+	return out;
+}
+
 graft::GraftSensorResidual::Ptr GraftImuTopic::h(const graft::GraftState& state){
 	graft::GraftSensorResidual::Ptr out(new graft::GraftSensorResidual());
 	out->header = state.header;
@@ -82,24 +111,45 @@ boost::array<double, 36> largeCovarianceFromSmallCovariance(const boost::array<d
 
 graft::GraftSensorResidual::Ptr GraftImuTopic::z(){
 	if(msg_ == NULL){ ///< @TODO If timeout, return NULL
+		ROS_WARN_THROTTLE(5.0, "IMU NULL");
 		return graft::GraftSensorResidual::Ptr();
 	}
 	graft::GraftSensorResidual::Ptr out(new graft::GraftSensorResidual());
 	out->header = msg_->header;
 	out->name = name_;
-	out->pose.orientation = msg_->orientation;
-	out->twist.angular = msg_->angular_velocity;
+
+	if(delta_orientation_){
+		if(last_msg_ == NULL){
+			last_msg_ = msg_;
+			return graft::GraftSensorResidual::Ptr();
+		}
+		double dt = (msg_->header.stamp - last_msg_->header.stamp).toSec();
+		out->twist = *twistFromQuaternions(msg_->orientation, last_msg_->orientation, dt);
+		last_msg_ = msg_;
+		if(std::accumulate(angular_velocity_covariance_.begin(),angular_velocity_covariance_.end(),0.0) > 1e-15){ // Override message
+			out->twist_covariance = largeCovarianceFromSmallCovariance(angular_velocity_covariance_);
+		} else { // Use from message
+			// Not sure what to do about covariance here...... robot_pose_ekf was strange
+			out->twist_covariance = largeCovarianceFromSmallCovariance(msg_->orientation_covariance);
+		}
+		out->twist_covariance[35] = msg_->orientation_covariance[8];
+	} else {
+		out->pose.orientation = msg_->orientation;
+		out->twist.angular = msg_->angular_velocity;
+		if(std::accumulate(orientation_covariance_.begin(),orientation_covariance_.end(),0.0) > 1e-15){ // Override message
+			out->pose_covariance = largeCovarianceFromSmallCovariance(orientation_covariance_);
+		} else { // Use from message
+			out->pose_covariance = largeCovarianceFromSmallCovariance(msg_->orientation_covariance);
+		}
+		if(std::accumulate(angular_velocity_covariance_.begin(),angular_velocity_covariance_.end(),0.0) > 1e-15){ // Override message
+			out->twist_covariance = largeCovarianceFromSmallCovariance(angular_velocity_covariance_);
+		} else { // Use from message
+			out->twist_covariance = largeCovarianceFromSmallCovariance(msg_->angular_velocity_covariance);
+		}
+	}
+
+	
 	out->accel = msg_->linear_acceleration;
-	if(std::accumulate(orientation_covariance_.begin(),orientation_covariance_.end(),0.0) > 1e-15){ // Override message
-		out->pose_covariance = largeCovarianceFromSmallCovariance(orientation_covariance_);
-	} else { // Use from message
-		out->pose_covariance = largeCovarianceFromSmallCovariance(msg_->orientation_covariance);
-	}
-	if(std::accumulate(angular_velocity_covariance_.begin(),angular_velocity_covariance_.end(),0.0) > 1e-15){ // Override message
-		out->twist_covariance = largeCovarianceFromSmallCovariance(angular_velocity_covariance_);
-	} else { // Use from message
-		out->twist_covariance = largeCovarianceFromSmallCovariance(msg_->angular_velocity_covariance);
-	}
 	if(std::accumulate(linear_acceleration_covariance_.begin(),linear_acceleration_covariance_.end(),0.0) > 1e-15){ // Override message
 		out->accel_covariance = linear_acceleration_covariance_;
 	} else { // Use from message

@@ -227,6 +227,12 @@ VectorXd getMeasurements(const std::vector<boost::shared_ptr<GraftSensor> >& top
 	return actual_measurement;
 }
 
+void clearMessages(std::vector<boost::shared_ptr<GraftSensor> >& topics){
+	for(size_t i = 0; i < topics.size(); i++){
+		topics[i]->clearMessage();
+	}
+}
+
 double GraftUKFVelocity::predictAndUpdate(){
 	if(topics_.size() == 0 || topics_[0] == NULL){
 		return 0;
@@ -262,6 +268,7 @@ double GraftUKFVelocity::predictAndUpdate(){
 	graft_state_ = predicted_mean + K*(z - predicted_measurement);
 	graft_covariance_ = predicted_covariance - K*predicted_measurement_uncertainty*K.transpose();
 
+	clearMessages(topics_);
 	return dt;
 }
 

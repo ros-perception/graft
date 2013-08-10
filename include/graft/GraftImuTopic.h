@@ -38,7 +38,8 @@
 #include <ros/ros.h>
 #include <Eigen/Dense>
 #include <sensor_msgs/Imu.h>
- #include <numeric>
+#include <tf/transform_datatypes.h>
+#include <numeric>
 
 using namespace Eigen;
 
@@ -57,6 +58,8 @@ class GraftImuTopic: public GraftSensor {
     virtual void setName(const std::string& name);
 
     virtual std::string getName();
+
+    virtual void clearMessage();
 
     //virtual MatrixXd H(graft::GraftState& state);
 
@@ -86,6 +89,7 @@ class GraftImuTopic: public GraftSensor {
 
   	ros::Subscriber sub_;
   	sensor_msgs::Imu::ConstPtr msg_;
+    sensor_msgs::Imu::ConstPtr last_msg_; // Used for delta calculations
 
   	std::string name_;
   	bool absolute_orientation_;

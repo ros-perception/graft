@@ -38,6 +38,7 @@
 #include <ros/ros.h>
 #include <Eigen/Dense>
 #include <nav_msgs/Odometry.h>
+#include <tf/transform_datatypes.h>
 #include <numeric>
 
 using namespace Eigen;
@@ -57,6 +58,8 @@ class GraftOdometryTopic: public GraftSensor {
     virtual void setName(const std::string& name);
 
     virtual std::string getName();
+
+    virtual void clearMessage();
 
     //virtual MatrixXd H(graft::GraftState& state);
 
@@ -83,12 +86,14 @@ class GraftOdometryTopic: public GraftSensor {
 
   	ros::Subscriber sub_;
   	nav_msgs::Odometry::ConstPtr msg_;
+    nav_msgs::Odometry::ConstPtr last_msg_; // Used for delta calculations
 
   	std::string name_;
   	bool absolute_pose_;
   	bool delta_pose_;
   	bool use_velocities_;
   	double timeout_;
+
 
   	boost::array<double, 36> pose_covariance_;
   	boost::array<double, 36> twist_covariance_;

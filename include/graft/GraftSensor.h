@@ -57,6 +57,8 @@ class GraftSensor{
 
     virtual std::string getName() = 0;
 
+    virtual void clearMessage() = 0;
+
     //virtual graft::GraftSensorResidual y(graft::GraftState& predicted) = 0;
 
     //virtual MatrixXd R() = 0;
