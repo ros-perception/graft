@@ -92,7 +92,7 @@ class GraftOdometryTopic: public GraftSensor {
   	bool absolute_pose_;
   	bool delta_pose_;
   	bool use_velocities_;
-  	double timeout_;
+  	ros::Duration timeout_;
 
 
   	boost::array<double, 36> pose_covariance_;

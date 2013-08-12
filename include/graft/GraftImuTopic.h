@@ -96,7 +96,7 @@ class GraftImuTopic: public GraftSensor {
   	bool delta_orientation_;
   	bool use_velocities_;
     bool use_accelerations_;
-  	double timeout_;
+  	ros::Duration timeout_;
 
     boost::array<double, 9> orientation_covariance_;
   	boost::array<double, 9> angular_velocity_covariance_;

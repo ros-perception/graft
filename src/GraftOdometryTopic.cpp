@@ -95,8 +95,8 @@ graft::GraftSensorResidual::Ptr GraftOdometryTopic::h(const graft::GraftState& s
 }
 
 graft::GraftSensorResidual::Ptr GraftOdometryTopic::z(){
-	if(msg_ == NULL){ ///< @TODO If timeout, return NULL
-		ROS_WARN_THROTTLE(5.0, "Odometry NULL");
+	if(msg_ == NULL || ros::Time::now() - timeout_ > msg_->header.stamp){
+		ROS_WARN_THROTTLE(5.0, "Odometry timeout");
 		return graft::GraftSensorResidual::Ptr();
 	}
 	graft::GraftSensorResidual::Ptr out(new graft::GraftSensorResidual());
@@ -134,10 +134,6 @@ graft::GraftSensorResidual::Ptr GraftOdometryTopic::z(){
 			out->pose_covariance = msg_->pose.covariance;
 		}
 	}
-
-
-	
-
   return out;
 }
 
@@ -146,7 +142,11 @@ void GraftOdometryTopic::useDeltaPose(bool delta_pose){
 }
 
 void GraftOdometryTopic::setTimeout(double timeout){
-	timeout_ = timeout;
+	if(timeout < 1e-10){
+		timeout_ = ros::Duration(1e10); // No timeout enforced
+		return;
+	}
+	timeout_ = ros::Duration(timeout);
 }
 
 void GraftOdometryTopic::setPoseCovariance(boost::array<double, 36>& cov){
