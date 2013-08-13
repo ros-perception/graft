@@ -1,6 +1,7 @@
 Header header
 geometry_msgs/Pose pose
 geometry_msgs/Twist twist
+geometry_msgs/Vector3 acceleration
 geometry_msgs/Vector3 gyro_bias
 geometry_msgs/Vector3 accel_bias
 

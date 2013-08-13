@@ -83,12 +83,21 @@ geometry_msgs::Twist::Ptr twistFromQuaternions(const geometry_msgs::Quaternion& 
 	return out;
 }
 
+geometry_msgs::Vector3 accelFromQuaternion(const geometry_msgs::Quaternion& q, const double gravity_magnitude){
+	geometry_msgs::Vector3 out;
+	out.x = 2.0*gravity_magnitude*(q.x*q.z - q.w * q.y);
+	out.y = 2.0*gravity_magnitude*(q.y*q.z + q.w*q.x);
+	out.z = -gravity_magnitude*(-q.w*q.w + q.x*q.x + q.y*q.y - q.z*q.z);
+	return out;
+}
+
 graft::GraftSensorResidual::Ptr GraftImuTopic::h(const graft::GraftState& state){
 	graft::GraftSensorResidual::Ptr out(new graft::GraftSensorResidual());
 	out->header = state.header;
 	out->name = name_;
 	out->pose = state.pose;
 	out->twist = state.twist;
+	out->accel = accelFromQuaternion(state.pose.orientation, 9.81);
   return out;
 }
 

@@ -52,9 +52,16 @@ add_library(GraftUKFVelocity src/GraftUKFVelocity.cpp)
 add_dependencies(GraftUKFVelocity ${PROJECT_NAME}_gencpp)
 target_link_libraries(GraftUKFVelocity GraftOdometryTopic GraftImuTopic)
 
+add_library(GraftUKFAttitude src/GraftUKFAttitude.cpp)
+add_dependencies(GraftUKFAttitude ${PROJECT_NAME}_gencpp)
+target_link_libraries(GraftUKFAttitude GraftOdometryTopic GraftImuTopic)
+
 ## Declare a cpp executable
 add_executable(graft_ukf_velocity src/graft_ukf_velocity.cpp)
 target_link_libraries(graft_ukf_velocity GraftUKFVelocity GraftParameterManager GraftOdometryTopic GraftImuTopic ${catkin_LIBRARIES})
+
+add_executable(graft_ukf_attitude src/graft_ukf_attitude.cpp)
+target_link_libraries(graft_ukf_attitude GraftUKFAttitude GraftParameterManager GraftOdometryTopic GraftImuTopic ${catkin_LIBRARIES})
 
 #############
 ## Install ##
