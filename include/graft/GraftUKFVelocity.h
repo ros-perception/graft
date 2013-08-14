@@ -65,6 +65,8 @@ class GraftUKFVelocity{
 
 	void setTopics(std::vector<boost::shared_ptr<GraftSensor> >& topics);
 
+	void setInitialCovariance(std::vector<double>& P);
+
 	void setProcessNoise(std::vector<double>& Q);
 
 	void setAlpha(const double alpha);

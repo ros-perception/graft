@@ -202,6 +202,17 @@ void GraftParameterManager::loadParameters(std::vector<boost::shared_ptr<GraftSe
   pnh_.param<double>("kappa", kappa_, 0.0);
   pnh_.param<double>("beta", beta_, 2.0);
 
+  // Initial covariance
+  XmlRpc::XmlRpcValue xml_initial_covariance;
+  if (pnh_.getParam("initial_covariance", xml_initial_covariance)){
+    initial_covariance_.resize(xml_initial_covariance.size());
+    for(size_t i = 0; i < xml_initial_covariance.size(); i++){
+      std::stringstream ss; // Convert the list element into doubles
+      ss << xml_initial_covariance[i];
+      ss >> initial_covariance_[i] ? initial_covariance_[i] : 0;
+    }
+  }
+
 	// Process noise covariance
 	XmlRpc::XmlRpcValue xml_process_noise;
   if (pnh_.getParam("process_noise", xml_process_noise)){
@@ -331,6 +342,10 @@ bool GraftParameterManager::getIncludePose(){
 
 bool GraftParameterManager::getPublishTF(){
   return publish_tf_;
+}
+
+std::vector<double> GraftParameterManager::getInitialCovariance(){
+  return initial_covariance_;
 }
 
 std::vector<double> GraftParameterManager::getProcessNoise(){

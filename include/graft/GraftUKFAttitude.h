@@ -44,7 +44,7 @@
 #include <tf/transform_datatypes.h>
  #include <graft/GraftSensor.h>
 
-#define SIZE 7  // State size: qw qx qy qz || wx wy wz || ax ay az bp bq br bax bay baz
+#define SIZE 7  // State size: qw qx qy qz || wx wy wz
 
 using namespace Eigen;
 
@@ -64,6 +64,8 @@ class GraftUKFAttitude{
 	double predictAndUpdate();
 
 	void setTopics(std::vector<boost::shared_ptr<GraftSensor> >& topics);
+
+	void setInitialCovariance(std::vector<double>& P);
 
 	void setProcessNoise(std::vector<double>& Q);
 

@@ -169,15 +169,6 @@ MatrixXd GraftUKFAttitude::f(MatrixXd x, double dt){
 	out(4) = x(4); // wx
 	out(5) = x(5); // wy
 	out(6) = x(6); // wz
-	/*out(7) = x(7); // ax
-	out(8) = x(8); // ay
-	out(9) = x(9); // az
-	out(10) = x(10); // bwz
-	out(11) = x(11); // bwy
-	out(12) = x(12); // bwz
-	out(13) = x(13); // bax
-	out(14) = x(14); // bay
-	out(15) = x(15); // baz*/
 	return out;
 }
 
@@ -190,15 +181,6 @@ graft::GraftState::ConstPtr stateMsgFromMatrix(const MatrixXd& state){
 	out->twist.angular.x = state(4);
 	out->twist.angular.y = state(5);
 	out->twist.angular.z = state(6);
-	/*out->acceleration.x = state(7);
-	out->acceleration.y = state(8);
-	out->acceleration.z = state(9);
-	out->gyro_bias.x = state(10);
-	out->gyro_bias.y = state(11);
-	out->gyro_bias.z = state(12);
-	out->accel_bias.x = state(13);
-	out->accel_bias.y = state(14);
-	out->accel_bias.z = state(15);*/
 	return out;
 }
 
@@ -388,16 +370,39 @@ void GraftUKFAttitude::setTopics(std::vector<boost::shared_ptr<GraftSensor> >& t
 	topics_ = topics;
 }
 
+void GraftUKFAttitude::setInitialCovariance(std::vector<double>& P){
+	graft_covariance_.setZero();
+	size_t diagonal_size = std::sqrt(graft_covariance_.size());
+	if(P.size() == graft_covariance_.size()){ // Full matrix
+		for(size_t i = 0; i < P.size(); i++){
+			graft_covariance_(i) = P[i];
+		}
+	} else if(P.size() == diagonal_size){ // Diagonal matrix
+		for(size_t i = 0; i < P.size(); i++){
+			graft_covariance_(i*(diagonal_size+1)) = P[i];
+		}
+	} else { // Not specified correctly
+		ROS_ERROR("initial_covariance is size %zu, expected %zu.\nUsing Identity.\nThis probably won't work well.", P.size(), graft_covariance_.size());
+		graft_covariance_.setIdentity();
+	}
+	std::cout << "cov:\n" << graft_covariance_ << std::endl;
+}
+
 void GraftUKFAttitude::setProcessNoise(std::vector<double>& Q){
 	Q_.setZero();
-	if(Q.size() != Q_.size()){
-		ROS_ERROR("Process noise parameter 'Q' is size %zu, expected %zu.\nUsing 0.1*Identity.", Q.size(), Q_.size());
+	size_t diagonal_size = std::sqrt(Q_.size());
+	if(Q.size() == Q_.size()){ // Full process nosie matrix
+		for(size_t i = 0; i < Q.size(); i++){
+			Q_(i) = Q[i];
+		}
+	} else if(Q.size() == diagonal_size){ // Diagonal matrix
+		for(size_t i = 0; i < Q.size(); i++){
+			Q_(i*(diagonal_size+1)) = Q[i];
+		}
+	} else { // Not specified correctly
+		ROS_ERROR("Process noise parameter 'Q' is size %zu, expected %zu.\nUsing 0.1*Identity.\nThis probably won't work well.", Q.size(), Q_.size());
 		Q_.setIdentity();
 		Q_ = 0.1 * Q_;
-		return;
-	}
-	for(size_t i = 0; i < Q.size(); i++){
-		Q_(i) = Q[i];
 	}
 }
 

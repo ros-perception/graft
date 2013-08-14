@@ -72,6 +72,8 @@ class GraftParameterManager{
 
     bool getPublishTF();
 
+    std::vector<double> getInitialCovariance();
+
     std::vector<double> getProcessNoise();
 
     double getAlpha();
@@ -94,6 +96,7 @@ class GraftParameterManager{
     double dt_override_; // Overrides the dt between updates, ignored if 0
     int queue_size_;
     bool publish_tf_;
+    std::vector<double> initial_covariance_;
     std::vector<double> process_noise_;
     double alpha_;
     double kappa_;

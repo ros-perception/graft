@@ -124,10 +124,12 @@ int main(int argc, char **argv)
 	publish_tf_ = manager.getPublishTF();
 
 	// Set up the E
+	std::vector<double> initial_covariance = manager.getInitialCovariance();
 	std::vector<double> Q = manager.getProcessNoise();
 	ukfv.setAlpha(manager.getAlpha());
 	ukfv.setKappa(manager.getKappa());
 	ukfv.setBeta(manager.getBeta());
+	ukfv.setInitialCovariance(initial_covariance);
 	ukfv.setProcessNoise(Q);
 	ukfv.setTopics(topics);
 

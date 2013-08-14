@@ -276,16 +276,39 @@ void GraftUKFVelocity::setTopics(std::vector<boost::shared_ptr<GraftSensor> >& t
 	topics_ = topics;
 }
 
+void GraftUKFVelocity::setInitialCovariance(std::vector<double>& P){
+	graft_covariance_.setZero();
+	size_t diagonal_size = std::sqrt(graft_covariance_.size());
+	if(P.size() == graft_covariance_.size()){ // Full matrix
+		for(size_t i = 0; i < P.size(); i++){
+			graft_covariance_(i) = P[i];
+		}
+	} else if(P.size() == diagonal_size){ // Diagonal matrix
+		for(size_t i = 0; i < P.size(); i++){
+			graft_covariance_(i*(diagonal_size+1)) = P[i];
+		}
+	} else { // Not specified correctly
+		ROS_ERROR("initial_covariance is size %zu, expected %zu.\nUsing 0.1*Identity.\nThis probably won't work well.", P.size(), graft_covariance_.size());
+		graft_covariance_.setIdentity();
+		graft_covariance_ = 0.1 * graft_covariance_;
+	}
+}
+
 void GraftUKFVelocity::setProcessNoise(std::vector<double>& Q){
 	Q_.setZero();
-	if(Q.size() != Q_.size()){
-		ROS_ERROR("Process noise parameter 'Q' is size %zu, expected %zu.\nUsing 0.1*Identity.", Q.size(), Q_.size());
+	size_t diagonal_size = std::sqrt(Q_.size());
+	if(Q.size() == Q_.size()){ // Full process nosie matrix
+		for(size_t i = 0; i < Q.size(); i++){
+			Q_(i) = Q[i];
+		}
+	} else if(Q.size() == diagonal_size){ // Diagonal matrix
+		for(size_t i = 0; i < Q.size(); i++){
+			Q_(i*(diagonal_size+1)) = Q[i];
+		}
+	} else { // Not specified correctly
+		ROS_ERROR("process_noise parameter is size %zu, expected %zu.\nUsing 0.1*Identity.\nThis probably won't work well.", Q.size(), Q_.size());
 		Q_.setIdentity();
 		Q_ = 0.1 * Q_;
-		return;
-	}
-	for(size_t i = 0; i < Q.size(); i++){
-		Q_(i) = Q[i];
 	}
 }
 
