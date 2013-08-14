@@ -89,7 +89,7 @@ geometry_msgs::Vector3 accelFromQuaternion(const geometry_msgs::Quaternion& q, c
   tf::Transform tft(tfq, tf::Vector3(0, 0, 0));
 	tf::Vector3 gravity(0, 0, gravity_magnitude);
 	geometry_msgs::Vector3 out;
-	tf::vector3TFToMsg(tft*gravity, out);
+	tf::vector3TFToMsg(tft.inverse()*gravity, out);
 	return out;
 }
 
