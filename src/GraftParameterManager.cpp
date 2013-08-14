@@ -66,9 +66,9 @@ void GraftParameterManager::parseNavMsgsOdometryParameters(ros::NodeHandle& tnh,
 	include_pose_ = include_pose_ || absolute_pose;
 
 	// Apply to sensor
-	odom->useAbsolutePose(absolute_pose);
+	//odom->useAbsolutePose(absolute_pose);
 	odom->useDeltaPose(delta_pose);
-	odom->useVelocities(use_velocities);
+	//odom->useVelocities(use_velocities);
   odom->setTimeout(timeout);
 
   //ROS_INFO("Abs pose: %d\nDelta pose: %d\nUse Vel: %d\nTimeout: %.3f", absolute_pose, delta_pose, use_velocities, timeout);
@@ -127,10 +127,10 @@ void GraftParameterManager::parseSensorMsgsIMUParameters(ros::NodeHandle& tnh, b
 	include_pose_ = include_pose_ || absolute_orientation;
 
 	// Apply to sensor
-	imu->useAbsoluteOrientation(absolute_orientation);
+	//imu->useAbsoluteOrientation(absolute_orientation);
 	imu->useDeltaOrientation(delta_orientation);
-	imu->useVelocities(use_velocities);
-	imu->useAccelerations(use_accelerations);
+	//imu->useVelocities(use_velocities);
+	//imu->useAccelerations(use_accelerations);
   imu->setTimeout(timeout);
 
   ROS_INFO("Abs orientation: %d\nDelta orientation: %d\nUse Vel: %d\nTimeout: %.3f", absolute_orientation, delta_orientation, use_velocities, timeout);
@@ -194,19 +194,33 @@ void GraftParameterManager::loadParameters(std::vector<boost::shared_ptr<GraftSe
 	pnh_.param<double>("update_rate", update_rate_, update_rate_); // Overrides 'freq'
 	pnh_.param<double>("dt_override", dt_override_, 0.0);
 
+  pnh_.param<bool>("publish_tf", publish_tf_, false);
+
 	pnh_.param<int>("queue_size", queue_size_, 1);
 
+  pnh_.param<double>("alpha", alpha_, 0.001);
+  pnh_.param<double>("kappa", kappa_, 0.0);
+  pnh_.param<double>("beta", beta_, 2.0);
+
+  // Initial covariance
+  XmlRpc::XmlRpcValue xml_initial_covariance;
+  if (pnh_.getParam("initial_covariance", xml_initial_covariance)){
+    initial_covariance_.resize(xml_initial_covariance.size());
+    for(size_t i = 0; i < xml_initial_covariance.size(); i++){
+      std::stringstream ss; // Convert the list element into doubles
+      ss << xml_initial_covariance[i];
+      ss >> initial_covariance_[i] ? initial_covariance_[i] : 0;
+    }
+  }
+
 	// Process noise covariance
-	XmlRpc::XmlRpcValue xml_Q;
-  if (pnh_.getParam("Q", xml_Q)){
-  	if(xml_Q.size() == 4){ // Only supporting velocity for now
-	    for(size_t i = 0; i < xml_Q.size(); i++){
-	      std::stringstream ss; // Convert the list element into doubles
-	      ss << xml_Q[i];
-	      ss >> Q_[i] ? Q_[i] : 0;
-	    }
-    } else {
-    	ROS_WARN("%s/Q (process noise covariance) parameter requires 4 elements, skipping.", pnh_.getNamespace().c_str());
+	XmlRpc::XmlRpcValue xml_process_noise;
+  if (pnh_.getParam("process_noise", xml_process_noise)){
+    process_noise_.resize(xml_process_noise.size());
+    for(size_t i = 0; i < xml_process_noise.size(); i++){
+      std::stringstream ss; // Convert the list element into doubles
+      ss << xml_process_noise[i];
+      ss >> process_noise_[i] ? process_noise_[i] : 0;
     }
   }
 
@@ -249,7 +263,8 @@ void GraftParameterManager::loadParameters(std::vector<boost::shared_ptr<GraftSe
       	}
 
       	// Create Odometry object
-      	boost::shared_ptr<GraftOdometryTopic> odom(new GraftOdometryTopic(topic_name));
+      	boost::shared_ptr<GraftOdometryTopic> odom(new GraftOdometryTopic());
+        odom->setName(topic_name);
       	topics.push_back(odom);	
 
       	// Subscribe to topic
@@ -266,7 +281,8 @@ void GraftParameterManager::loadParameters(std::vector<boost::shared_ptr<GraftSe
       	}
 
       	// Create Odometry object
-      	boost::shared_ptr<GraftImuTopic> imu(new GraftImuTopic(topic_name));
+      	boost::shared_ptr<GraftImuTopic> imu(new GraftImuTopic());
+        imu->setName(topic_name);
       	topics.push_back(imu);	
 
       	// Subscribe to topic
@@ -324,6 +340,26 @@ bool GraftParameterManager::getIncludePose(){
 	return include_pose_;
 }
 
-boost::array<double, 4> GraftParameterManager::getProcessNoise(){
-	return Q_;
+bool GraftParameterManager::getPublishTF(){
+  return publish_tf_;
+}
+
+std::vector<double> GraftParameterManager::getInitialCovariance(){
+  return initial_covariance_;
+}
+
+std::vector<double> GraftParameterManager::getProcessNoise(){
+	return process_noise_;
+}
+
+double GraftParameterManager::getAlpha(){
+  return alpha_;
+}
+
+double GraftParameterManager::getKappa(){
+  return kappa_;
+}
+
+double GraftParameterManager::getBeta(){
+  return beta_;
 }

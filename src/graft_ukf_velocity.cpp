@@ -37,12 +37,12 @@
 #include <graft/GraftParameterManager.h>
 #include <graft/GraftSensor.h>
 #include <graft/GraftOdometryTopic.h>
- #include <graft/GraftImuTopic.h>
-#include <graft/GraftEKFVelocity.h>
+#include <graft/GraftImuTopic.h>
+#include <graft/GraftUKFVelocity.h>
 #include <graft/GraftState.h>
 #include <tf/transform_broadcaster.h>
 
-GraftEKFVelocity ekfv;
+GraftUKFVelocity ukfv;
 
 ros::Publisher state_pub;
 ros::Publisher odom_pub;
@@ -68,50 +68,52 @@ void publishTF(const nav_msgs::Odometry& msg){
 }
 
 void timer_callback(const ros::TimerEvent& event){
-	double dt = ekfv.predictAndUpdate();
+	double dt = ukfv.predictAndUpdate();
 
-	graft::GraftState state = *ekfv.getMessageFromState();
+	graft::GraftState state = *ukfv.getMessageFromState();
 	state.header.stamp = ros::Time::now();
 	state_pub.publish(state);
 
 	odom_.header.stamp = ros::Time::now();
-	odom_.header.frame_id = "odom_fused_ekfv";
+	odom_.header.frame_id = "odom_fused_ukfv";
 	odom_.child_frame_id = "base_link";
 	odom_.twist.twist.linear.x = state.twist.linear.x;
+	odom_.twist.twist.linear.y = state.twist.linear.y;
 	odom_.twist.twist.angular.z = state.twist.angular.z;
 
-	 // Update Odometry
+	// Update Odometry
 	double diff = pow(odom_.pose.pose.orientation.w, 2.0)-pow(odom_.pose.pose.orientation.z, 2.0);
 	double mult = 2.0*odom_.pose.pose.orientation.w*odom_.pose.pose.orientation.z;
 	double theta = atan2(mult, diff);
 	if(std::abs(odom_.twist.twist.angular.z) < 0.00001){ // There's no (or very little) curvature, apply the straight line model
-		odom_.pose.pose.position.x += odom_.twist.twist.linear.x*dt*cos(theta);
-		odom_.pose.pose.position.y += odom_.twist.twist.linear.x*dt*sin(theta);
+		odom_.pose.pose.position.x += odom_.twist.twist.linear.x*dt*cos(theta)-odom_.twist.twist.linear.y*dt*sin(theta);
+		odom_.pose.pose.position.y += odom_.twist.twist.linear.x*dt*sin(theta)+odom_.twist.twist.linear.y*dt*cos(theta);
 	} else { // Calculate components of arc distance and add distances.
-		double curvature = odom_.twist.twist.linear.x/odom_.twist.twist.angular.z;
+		double curvature_x = odom_.twist.twist.linear.x/odom_.twist.twist.angular.z;
+		double curvature_y = odom_.twist.twist.linear.y/odom_.twist.twist.angular.z;
 		double new_theta = theta + odom_.twist.twist.angular.z*dt;
 
-		odom_.pose.pose.position.x += -curvature*sin(theta) + curvature*sin(new_theta);
-		odom_.pose.pose.position.y += curvature*cos(theta) - curvature*cos(new_theta);
+		odom_.pose.pose.position.x += -curvature_x*sin(theta) + curvature_x*sin(new_theta);
+		odom_.pose.pose.position.x += -curvature_y*cos(theta) + curvature_y*cos(new_theta);
+		odom_.pose.pose.position.y += curvature_x*cos(theta) - curvature_x*cos(new_theta);
+		odom_.pose.pose.position.y += -curvature_y*sin(theta) + curvature_y*sin(new_theta);
 		theta = new_theta;
 	}
 	odom_.pose.pose.orientation.z = sin(theta/2.0);
-		odom_.pose.pose.orientation.w = cos(theta/2.0);
+	odom_.pose.pose.orientation.w = cos(theta/2.0);
 	odom_pub.publish(odom_);
 	if(publish_tf_){
-	    publishTF(odom_);
+	  publishTF(odom_);
 	}
 }
 
 int main(int argc, char **argv)
 {
-	ros::init(argc, argv, "graft_ekf_velocity");
+	ros::init(argc, argv, "graft_ukf_velocity");
 	ros::NodeHandle n;
 	ros::NodeHandle pnh("~");
 	state_pub = n.advertise<graft::GraftState>("state", 5);
 	odom_pub = n.advertise<nav_msgs::Odometry>("odom_combined", 5);
-
-	pnh.param<bool>("publish_tf", publish_tf_, false); //< PUT ME IN PARAM MANAGER
 
 	// Load parameters
 	std::vector<boost::shared_ptr<GraftSensor> > topics;
@@ -119,10 +121,17 @@ int main(int argc, char **argv)
 	GraftParameterManager manager(n, pnh);
 	manager.loadParameters(topics, subs);
 
+	publish_tf_ = manager.getPublishTF();
+
 	// Set up the E
-	boost::array<double, 4> Q = manager.getProcessNoise();
-	ekfv.setVelocityProcessNoise(Q);
-	ekfv.setTopics(topics);
+	std::vector<double> initial_covariance = manager.getInitialCovariance();
+	std::vector<double> Q = manager.getProcessNoise();
+	ukfv.setAlpha(manager.getAlpha());
+	ukfv.setKappa(manager.getKappa());
+	ukfv.setBeta(manager.getBeta());
+	ukfv.setInitialCovariance(initial_covariance);
+	ukfv.setProcessNoise(Q);
+	ukfv.setTopics(topics);
 
 	odom_.pose.pose.position.x = 0.0;
 	odom_.pose.pose.position.y = 0.0;

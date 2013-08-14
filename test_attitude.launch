@@ -1,0 +1,8 @@
+<launch>
+
+  <node name="graft_ukf_attitude" pkg="graft" type="graft_ukf_attitude" output="screen" >
+     <rosparam file="$(find graft)/config/attitude_config.yaml" command="load" />
+     <remap from="odom_combined" to="odom_combined_graft" />
+  </node>
+
+</launch>

@@ -31,10 +31,12 @@
  * Author: Chad Rockey
  */
 
-#ifndef GRAFT_EKFVELOCITY_H
-#define GRAFT_EKFVELOCITY_H
+#ifndef GRAFT_UKFATTITUDE_H
+#define GRAFT_UKFATTITUDE_H
 
 #include <Eigen/Dense>
+#include <Eigen/Cholesky>
+
 #include <graft/GraftState.h>
 #include <nav_msgs/Odometry.h>
 #include <geometry_msgs/QuaternionStamped.h>
@@ -42,19 +44,18 @@
 #include <tf/transform_datatypes.h>
  #include <graft/GraftSensor.h>
 
-#define SIZE 2  // State size: vx, wz
-#define MEAS_SIZE 2  // Measurement size: vx, wz
+#define SIZE 7  // State size: qw qx qy qz || wx wy wz
 
 using namespace Eigen;
 
-class GraftEKFVelocity{
+class GraftUKFAttitude{
   public:
-    GraftEKFVelocity();
-    ~GraftEKFVelocity();
+    GraftUKFAttitude();
+    ~GraftUKFAttitude();
 
-	Matrix<double, SIZE, 1> f(Matrix<double, SIZE, 1> x, Matrix<double, SIZE, 1> u, double dt);
+	MatrixXd f(MatrixXd x, double dt);
 
-	Matrix<double, SIZE, SIZE> getF(Matrix<double, SIZE, 1> x, Matrix<double, SIZE, 1> u, double dt);
+	std::vector<MatrixXd > predict_sigma_points(std::vector<MatrixXd >& sigma_points, double dt);
 
 	graft::GraftStatePtr getMessageFromState();
 
@@ -64,18 +65,30 @@ class GraftEKFVelocity{
 
 	void setTopics(std::vector<boost::shared_ptr<GraftSensor> >& topics);
 
-	void setVelocityProcessNoise(boost::array<double, 4>& Q);
+	void setInitialCovariance(std::vector<double>& P);
+
+	void setProcessNoise(std::vector<double>& Q);
+
+	void setAlpha(const double alpha);
+
+	void setKappa(const double kappa);
+
+	void setBeta(const double beta);
     
   private:
 
-    Matrix<double, SIZE, 1> graft_state;
-	Matrix<double, SIZE, 1> graft_control;
-	Matrix<double, SIZE, SIZE> graft_covariance;
+    Matrix<double, SIZE, 1> graft_state_;
+	Matrix<double, SIZE, 1> graft_control_;
+	Matrix<double, SIZE, SIZE> graft_covariance_;
 
 	Matrix<double, SIZE, SIZE> Q_;
 
     ros::Time last_update_time_;
     ros::Time last_imu_time_;
+
+    double alpha_;
+    double beta_;
+    double kappa_;
 
     std::vector<boost::shared_ptr<GraftSensor> > topics_;
 };

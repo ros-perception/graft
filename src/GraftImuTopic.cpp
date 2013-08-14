@@ -34,7 +34,7 @@
  #include <graft/GraftImuTopic.h>
 
 
-GraftImuTopic::GraftImuTopic(std::string& name): name_(name){
+GraftImuTopic::GraftImuTopic(){
 
 }
 
@@ -46,59 +46,139 @@ void GraftImuTopic::callback(const sensor_msgs::Imu::ConstPtr& msg){
 	msg_ = msg;
 }
 
-MatrixXd GraftImuTopic::h(graft::GraftState& state){
-  Matrix<double, 1, 1> out;
-  out(0) = state.twist.angular.z;
+void GraftImuTopic::setName(const std::string& name){
+	name_ = name;
+}
+
+std::string GraftImuTopic::getName(){
+	return name_;
+}
+
+void GraftImuTopic::clearMessage(){
+	msg_ = sensor_msgs::Imu::ConstPtr();
+}
+
+geometry_msgs::Twist::Ptr twistFromQuaternions(const geometry_msgs::Quaternion& quat, const geometry_msgs::Quaternion& last_quat, const double dt){
+	geometry_msgs::Twist::Ptr out(new geometry_msgs::Twist());
+	if(dt < 1e-10){
+		return out;
+	}
+	tf::Quaternion tfq2, tfq1;
+	tf::quaternionMsgToTF(quat, tfq2);
+  tf::quaternionMsgToTF(last_quat, tfq1);
+  tf::Transform tf2(tfq2, tf::Vector3(0, 0, 0));
+  tf::Transform tf1(tfq1, tf::Vector3(0, 0, 0));
+
+  tf::Transform dtf = tf1.inverse() * tf2;
+
+  out->linear.x = 0;
+  out->linear.y = 0;
+  out->linear.y = 0;
+  double rX, rY, rZ;
+  dtf.getBasis().getEulerYPR(rZ, rY, rX);
+  out->angular.x = rX/dt;
+  out->angular.y = rY/dt;
+	out->angular.z = rZ/dt;
+
+	return out;
+}
+
+geometry_msgs::Vector3 accelFromQuaternion(const geometry_msgs::Quaternion& q, const double gravity_magnitude){
+	tf::Quaternion tfq;
+	tf::quaternionMsgToTF(q, tfq);
+  tf::Transform tft(tfq, tf::Vector3(0, 0, 0));
+	tf::Vector3 gravity(0, 0, gravity_magnitude);
+	geometry_msgs::Vector3 out;
+	tf::vector3TFToMsg(tft.inverse()*gravity, out);
+	return out;
+}
+
+graft::GraftSensorResidual::Ptr GraftImuTopic::h(const graft::GraftState& state){
+	graft::GraftSensorResidual::Ptr out(new graft::GraftSensorResidual());
+	out->header = state.header;
+	out->name = name_;
+	out->pose = state.pose;
+	out->twist = state.twist;
+	out->accel = accelFromQuaternion(state.pose.orientation, 9.81);
   return out;
 }
 
-MatrixXd GraftImuTopic::H(graft::GraftState& state){
-  Matrix<double, 1, 2> out;
-  out(0) = 0;
-  out(1) = 1;
-  return out;
-}
-
-MatrixXd GraftImuTopic::y(graft::GraftState& predicted){
-	MatrixXd meas = z();
-	return meas - h(predicted);
-}
-
-MatrixXd GraftImuTopic::R(){
-  Matrix<double, 1, 1> out;
-	out(0) = angular_velocity_covariance_[8]; // Wz
-	if(msg_ != NULL && out.diagonal().sum() < 0.001){ // All zero and we shouldn't have negative values, use from message
-		out(0) = msg_->angular_velocity_covariance[8]; // Wz
+boost::array<double, 36> largeCovarianceFromSmallCovariance(const boost::array<double, 9>& angular_velocity_covariance){
+	boost::array<double, 36> out;
+	for(size_t i = 0; i < out.size(); i++){
+		out[i] = 0;
+	}
+	for(size_t i = 0; i < 3; i++){
+		out[i+21] = angular_velocity_covariance[i];
+	}
+	for(size_t i = 3; i < 6; i++){
+		out[i+24] = angular_velocity_covariance[i];
+	}
+	for(size_t i = 6; i < 9; i++){
+		out[i+27] = angular_velocity_covariance[i];
 	}
 	return out;
 }
 
-MatrixXd GraftImuTopic::z(){
-  Matrix<double, 1, 1> out;
-  if(msg_ != NULL){
-    out(0) = msg_->angular_velocity.z;
-  }
-  return out;
-}
+graft::GraftSensorResidual::Ptr GraftImuTopic::z(){
+	if(msg_ == NULL || ros::Time::now() - timeout_ > msg_->header.stamp){
+		ROS_WARN_THROTTLE(5.0, "IMU timeout");
+		return graft::GraftSensorResidual::Ptr();
+	}
+	graft::GraftSensorResidual::Ptr out(new graft::GraftSensorResidual());
+	out->header = msg_->header;
+	out->name = name_;
 
-void GraftImuTopic::useAbsoluteOrientation(bool absolute_orientation){
-	absolute_orientation_ = absolute_orientation;
+	if(delta_orientation_){
+		if(last_msg_ == NULL){
+			last_msg_ = msg_;
+			return graft::GraftSensorResidual::Ptr();
+		}
+		double dt = (msg_->header.stamp - last_msg_->header.stamp).toSec();
+		out->twist = *twistFromQuaternions(msg_->orientation, last_msg_->orientation, dt);
+		last_msg_ = msg_;
+		if(std::accumulate(angular_velocity_covariance_.begin(),angular_velocity_covariance_.end(),0.0) > 1e-15){ // Override message
+			out->twist_covariance = largeCovarianceFromSmallCovariance(angular_velocity_covariance_);
+		} else { // Use from message
+			// Not sure what to do about covariance here...... robot_pose_ekf was strange
+			out->twist_covariance = largeCovarianceFromSmallCovariance(msg_->orientation_covariance);
+		}
+		out->twist_covariance[35] = msg_->orientation_covariance[8];
+	} else {
+		out->pose.orientation = msg_->orientation;
+		out->twist.angular = msg_->angular_velocity;
+		if(std::accumulate(orientation_covariance_.begin(),orientation_covariance_.end(),0.0) > 1e-15){ // Override message
+			out->pose_covariance = largeCovarianceFromSmallCovariance(orientation_covariance_);
+		} else { // Use from message
+			out->pose_covariance = largeCovarianceFromSmallCovariance(msg_->orientation_covariance);
+		}
+		if(std::accumulate(angular_velocity_covariance_.begin(),angular_velocity_covariance_.end(),0.0) > 1e-15){ // Override message
+			out->twist_covariance = largeCovarianceFromSmallCovariance(angular_velocity_covariance_);
+		} else { // Use from message
+			out->twist_covariance = largeCovarianceFromSmallCovariance(msg_->angular_velocity_covariance);
+		}
+	}
+
+	
+	out->accel = msg_->linear_acceleration;
+	if(std::accumulate(linear_acceleration_covariance_.begin(),linear_acceleration_covariance_.end(),0.0) > 1e-15){ // Override message
+		out->accel_covariance = linear_acceleration_covariance_;
+	} else { // Use from message
+		out->accel_covariance = msg_->linear_acceleration_covariance;
+	}
+  return out;
 }
 
 void GraftImuTopic::useDeltaOrientation(bool delta_orientation){
 	delta_orientation_ = delta_orientation;
 }
 
-void GraftImuTopic::useVelocities(bool use_velocities){
-	use_velocities_ = use_velocities;
-}
-
-void GraftImuTopic::useAccelerations(bool use_accelerations){
-	use_accelerations_ = use_accelerations;
-}
-
 void GraftImuTopic::setTimeout(double timeout){
-	timeout_ = timeout;
+	if(timeout < 1e-10){
+		timeout_ = ros::Duration(1e10); // No timeout enforced
+		return;
+	}
+	timeout_ = ros::Duration(timeout);
 }
 
 void GraftImuTopic::setOrientationCovariance(boost::array<double, 9>& cov){

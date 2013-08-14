@@ -31,77 +31,66 @@
  * Author: Chad Rockey
  */
 
-#ifndef GRAFT_IMU_TOPIC_H
-#define GRAFT_IMU_TOPIC_H
+#ifndef GRAFT_UKFVELOCITY_H
+#define GRAFT_UKFVELOCITY_H
 
-#include <graft/GraftSensor.h>
-#include <ros/ros.h>
 #include <Eigen/Dense>
+#include <Eigen/Cholesky>
+
+#include <graft/GraftState.h>
+#include <nav_msgs/Odometry.h>
+#include <geometry_msgs/QuaternionStamped.h>
 #include <sensor_msgs/Imu.h>
 #include <tf/transform_datatypes.h>
-#include <numeric>
+ #include <graft/GraftSensor.h>
+
+#define SIZE 3  // State size: vx, vy, wz
 
 using namespace Eigen;
 
-class GraftImuTopic: public GraftSensor {
+class GraftUKFVelocity{
   public:
-  	GraftImuTopic();
+    GraftUKFVelocity();
+    ~GraftUKFVelocity();
 
-  	~GraftImuTopic();
+	MatrixXd f(MatrixXd x, double dt);
 
-  	void callback(const sensor_msgs::Imu::ConstPtr& msg);
+	std::vector<MatrixXd > predict_sigma_points(std::vector<MatrixXd >& sigma_points, double dt);
 
-    virtual graft::GraftSensorResidual::Ptr h(const graft::GraftState& state);
+	graft::GraftStatePtr getMessageFromState();
 
-    virtual graft::GraftSensorResidual::Ptr z();
+	graft::GraftStatePtr getMessageFromState(Matrix<double, SIZE, 1>& state, Matrix<double, SIZE, SIZE>& covariance);
 
-    virtual void setName(const std::string& name);
+	double predictAndUpdate();
 
-    virtual std::string getName();
+	void setTopics(std::vector<boost::shared_ptr<GraftSensor> >& topics);
 
-    virtual void clearMessage();
+	void setInitialCovariance(std::vector<double>& P);
 
-    //virtual MatrixXd H(graft::GraftState& state);
+	void setProcessNoise(std::vector<double>& Q);
 
-    //virtual MatrixXd y(graft::GraftState& predicted);
+	void setAlpha(const double alpha);
 
-    //virtual MatrixXd R();
+	void setKappa(const double kappa);
 
-    //void useAbsoluteOrientation(bool absolute_orientation);
-
-    void useDeltaOrientation(bool delta_orientation);
-
-    //void useVelocities(bool use_velocities);
-
-    //void useAccelerations(bool use_accelerations);
-
-    void setTimeout(double timeout);
-
-    void setOrientationCovariance(boost::array<double, 9>& cov);
-
-    void setAngularVelocityCovariance(boost::array<double, 9>& cov);
-
-    void setLinearAccelerationCovariance(boost::array<double, 9>& cov);
+	void setBeta(const double beta);
     
   private:
 
-    sensor_msgs::Imu::ConstPtr getMsg();
+    Matrix<double, SIZE, 1> graft_state_;
+	Matrix<double, SIZE, 1> graft_control_;
+	Matrix<double, SIZE, SIZE> graft_covariance_;
 
-  	ros::Subscriber sub_;
-  	sensor_msgs::Imu::ConstPtr msg_;
-    sensor_msgs::Imu::ConstPtr last_msg_; // Used for delta calculations
+	Matrix<double, SIZE, SIZE> Q_;
 
-  	std::string name_;
-  	bool absolute_orientation_;
-  	bool delta_orientation_;
-  	bool use_velocities_;
-    bool use_accelerations_;
-  	ros::Duration timeout_;
+    ros::Time last_update_time_;
+    ros::Time last_imu_time_;
 
-    boost::array<double, 9> orientation_covariance_;
-  	boost::array<double, 9> angular_velocity_covariance_;
-    boost::array<double, 9> linear_acceleration_covariance_;
+    double alpha_;
+    double beta_;
+    double kappa_;
 
+    std::vector<boost::shared_ptr<GraftSensor> > topics_;
 };
 
 #endif

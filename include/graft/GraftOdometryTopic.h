@@ -38,31 +38,41 @@
 #include <ros/ros.h>
 #include <Eigen/Dense>
 #include <nav_msgs/Odometry.h>
+#include <tf/transform_datatypes.h>
+#include <numeric>
 
 using namespace Eigen;
 
 class GraftOdometryTopic: public GraftSensor {
   public:
-  	GraftOdometryTopic(std::string& name);
+  	GraftOdometryTopic();
 
   	~GraftOdometryTopic();
 
   	void callback(const nav_msgs::Odometry::ConstPtr& msg);
 
-    virtual MatrixXd h(graft::GraftState& state);
+    virtual graft::GraftSensorResidual::Ptr h(const graft::GraftState& state);
 
-    virtual MatrixXd H(graft::GraftState& state);
+    virtual graft::GraftSensorResidual::Ptr z();
 
-    virtual MatrixXd y(graft::GraftState& predicted);
+    virtual void setName(const std::string& name);
 
-    virtual MatrixXd R();
+    virtual std::string getName();
+
+    virtual void clearMessage();
+
+    //virtual MatrixXd H(graft::GraftState& state);
+
+    //virtual MatrixXd y(graft::GraftState& predicted);
+
+    //virtual MatrixXd R();
 
 
-    void useAbsolutePose(bool absolute_pose);
+    //void useAbsolutePose(bool absolute_pose);
 
     void useDeltaPose(bool delta_pose);
 
-    void useVelocities(bool use_velocities);
+    //void useVelocities(bool use_velocities);
 
     void setTimeout(double timeout);
 
@@ -72,18 +82,18 @@ class GraftOdometryTopic: public GraftSensor {
     
   private:
 
-  	virtual MatrixXd z();
-
   	nav_msgs::Odometry::ConstPtr getMsg();
 
   	ros::Subscriber sub_;
   	nav_msgs::Odometry::ConstPtr msg_;
+    nav_msgs::Odometry::ConstPtr last_msg_; // Used for delta calculations
 
   	std::string name_;
   	bool absolute_pose_;
   	bool delta_pose_;
   	bool use_velocities_;
-  	double timeout_;
+  	ros::Duration timeout_;
+
 
   	boost::array<double, 36> pose_covariance_;
   	boost::array<double, 36> twist_covariance_;

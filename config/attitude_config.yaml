@@ -1,0 +1,67 @@
+filter_type: EKF # EKF or UKF - may change to be different nodes instead of a parameter
+
+planar_output: True # Output only x, y, and rotation about z
+
+output_frame: odom # TF frame id, param name ported from robot_pose_ekf
+parent_frame_id: odom # TF frame id, override output_frame if set
+child_frame_id: base_link #TF frame id
+
+freq: 10.0 # In Hz, param name ported from robot_pose_ekf
+update_rate: 20.0 #Overides 'freq' if set, in Hz
+update_topic: odom # Which topic to trigger updates, if blank, uses timed update_rate, if '*', will trigger on all new topics
+
+dt_override : 0.0 # Override the dt for update_rate or update_topic, ignored if 0
+
+queue_size: 1
+
+publish_tf: true
+
+# Filter parameters
+
+alpha: 0.001
+kappa: 0.0
+beta: 2.0
+
+# Initial covariance estimate
+initial_covariance: [1e-3, 1e-3, 1e-3, 1e-3, 1, 1, 1]
+
+# Process noise covariance 2x2 for velocites, 5x5 for 2d position
+process_nosie: [1e-5, 1e-5, 1e-5, 1e-5, 1e6, 1e6, 1e6]
+#process_noise: [1e-5, 0, 0, 0, 0, 0, 0,
+#                0, 1e-5, 0, 0, 0, 0, 0,
+#                0, 0, 1e-5, 0, 0, 0, 0,
+#                0, 0, 0, 1e-5, 0, 0, 0,
+#                0, 0, 0, 0, 1e6, 0, 0,
+#                0, 0, 0, 0, 0, 1e6, 0,
+#                0, 0, 0, 0, 0, 0, 1e6]
+
+topics: {
+  base_imu: {
+    topic: /imu/data,
+    type: sensor_msgs/Imu,
+    absolute_orientation: False,
+    delta_orientation: False, # Overrides absolute_orientation
+    use_velocities: True,
+    use_accelerations: False,
+    timeout: 1.0,
+
+    # Row major 3x3: rotation about x, rotation about y, rotation about z
+    # Read from message if all zero
+    override_orientation_covariance: [0, 0, 0,
+                                      0, 0, 0,
+                                      0, 0, 0],
+
+    # Row major 3x3: wx, wy, wz
+    # Read from message if all zero
+    override_angular_velocity_covariance: [0, 0, 0,
+                                           0, 0, 0,
+                                           0, 0, 0],
+
+    # Row major 3x3: ax, ay, az
+    # Read from message if all zero
+    override_linear_acceleration_covariance: [1, 0, 0,
+                                              0, 1, 0,
+                                              0, 0, 1],
+  },
+
+}

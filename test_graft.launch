@@ -1,10 +1,8 @@
 <launch>
 
-  <group ns="graft_ekf_velocity">
-    <rosparam file="$(find graft)/config/sample_config.yaml" command="load" />
-  </group>
-
-
-  <node name="graft_ekf_velocity" pkg="graft" type="graft_ekf_velocity" output="screen" />
+  <node name="graft_ukf_velocity" pkg="graft" type="graft_ukf_velocity" output="screen" >
+     <rosparam file="$(find graft)/config/sample_config.yaml" command="load" />
+     <remap from="odom_combined" to="odom_combined_graft" />
+  </node>
 
 </launch>
