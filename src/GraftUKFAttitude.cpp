@@ -134,21 +134,30 @@ Matrix<double, 4, 4> quaternionUpdateMatrix(const double wx, const double wy, co
    return out;
 }
 
-Matrix<double, 4, 1> updatedQuaternion(const Matrix<double, 4, 1>& q, const double wx, const double wy, const double wz, const double dt){
+Matrix<double, 4, 1> unitQuaternion(const Matrix<double, 4, 1>& q){
+	double q_mag = std::sqrt(q(0)*q(0) + q(1)*q(1) + q(2)*q(2) + q(3)*q(3));
+	return q / q_mag;
+}
+
+Matrix<double, 4, 1> updatedQuaternion(const Matrix<double, 4, 1>& q, const double wx, const double wy, const double wz, double dt){
 	Matrix<double, 4, 1> out;
+	Matrix<double, 4, 4> I = Matrix<double, 4, 4>::Identity();
+	double s = 1.0/2.0 * std::sqrt(wx*wx*dt*dt + wy*wy*dt*dt + wz*wz*dt*dt);
+	double k = 0.0;
+	double q_mag = std::sqrt(q(0)*q(0) + q(1)*q(1) + q(2)*q(2) + q(3)*q(3));
+	double err = 1.0 - q_mag*q_mag;
+	
+	double correction_factor = 1 - 1.0/2.0*s*s + 1.0/24.0*s*s*s*s + k * dt * err; // Cosine taylor series
+	MatrixXd correction = I*(correction_factor);
+	double update_factor = 1.0/2.0*dt*(1.0 - 1.0/6.0*s*s + 1.0/120.0*s*s*s*s); // Sinc taylor series
 	Matrix<double, 4, 4> quaterion_update_matrix = quaternionUpdateMatrix(wx, wy, wz);
-	double s = 1.0/2.0*std::sqrt(wx*wx*dt*dt + wy*wy*dt*dt + wz*wz*dt*dt);
-	double unit_err = 1.0 - std::abs(q(0)*q(0) + q(1)*q(1) + q(2)*q(2) + q(3)*q(3));
-	double lagrange_multiplier = 0.0; ///< @TODO, Calculate this correction factor.
-	if(s < 1e-10){ // Not real movement, return current guess
-		return q;
-	}
-	out = (MatrixXd::Identity(4,4) * (cos(s) + lagrange_multiplier*unit_err*dt) - 1.0/2.0*quaterion_update_matrix*dt*sin(s)/s)*q;
-	//double out_mag = std::sqrt(q(0)*q(0) + q(1)*q(1) + q(2)*q(2) + q(3)*q(3));
-	//out(0) = out(0) / out_mag;
-	//out(1) = out(1) / out_mag;
-	//out(2) = out(2) / out_mag;
-	//out(3) = out(3) / out_mag;
+	MatrixXd update = update_factor*quaterion_update_matrix;
+	out = (correction-update)*q;
+
+
+	double out_mag = std::sqrt(out(0)*out(0) + out(1)*out(1) + out(2)*out(2) + out(3)*out(3));
+	double out_err = 1.0 - out_mag*out_mag;
+
 	return out;
 }
 
@@ -160,7 +169,7 @@ MatrixXd GraftUKFAttitude::f(MatrixXd x, double dt){
 	out(4) = x(4); // wx
 	out(5) = x(5); // wy
 	out(6) = x(6); // wz
-	out(7) = x(7); // ax
+	/*out(7) = x(7); // ax
 	out(8) = x(8); // ay
 	out(9) = x(9); // az
 	out(10) = x(10); // bwz
@@ -168,7 +177,7 @@ MatrixXd GraftUKFAttitude::f(MatrixXd x, double dt){
 	out(12) = x(12); // bwz
 	out(13) = x(13); // bax
 	out(14) = x(14); // bay
-	out(15) = x(15); // baz
+	out(15) = x(15); // baz*/
 	return out;
 }
 
@@ -181,7 +190,7 @@ graft::GraftState::ConstPtr stateMsgFromMatrix(const MatrixXd& state){
 	out->twist.angular.x = state(4);
 	out->twist.angular.y = state(5);
 	out->twist.angular.z = state(6);
-	out->acceleration.x = state(7);
+	/*out->acceleration.x = state(7);
 	out->acceleration.y = state(8);
 	out->acceleration.z = state(9);
 	out->gyro_bias.x = state(10);
@@ -189,7 +198,7 @@ graft::GraftState::ConstPtr stateMsgFromMatrix(const MatrixXd& state){
 	out->gyro_bias.z = state(12);
 	out->accel_bias.x = state(13);
 	out->accel_bias.y = state(14);
-	out->accel_bias.z = state(15);
+	out->accel_bias.z = state(15);*/
 	return out;
 }
 
@@ -207,10 +216,6 @@ graft::GraftStatePtr GraftUKFAttitude::getMessageFromState(){
 
 graft::GraftStatePtr GraftUKFAttitude::getMessageFromState(Matrix<double, SIZE, 1>& state, Matrix<double, SIZE, SIZE>& covariance){
 	graft::GraftStatePtr msg(new graft::GraftState());
-	msg->twist.linear.x = state(0);
-	msg->twist.linear.y = state(1);
-	msg->twist.angular.z = state(2);
-
 	msg->pose.orientation.w = state(0);
 	msg->pose.orientation.x = state(1);
 	msg->pose.orientation.y = state(2);
@@ -245,21 +250,6 @@ MatrixXd addElementToColumnMatrix(const MatrixXd& mat, const double element){
 	}
 	out << mat, small;
 	return out;
-}
-
-VectorXd quaternionFromAcceleration(const VectorXd& q, const geometry_msgs::Vector3& accel){
-	// Calculate pitch and roll estimate from accelerometers
-    double r = std::atan2(accel.y, copysignf(1.0, accel.z) * sqrt(accel.x*accel.x + accel.z*accel.z));
-    double p = -std::atan2(accel.x, sqrt(accel.y*accel.y + accel.z*accel.z));
-                        
-    // Calculate predicted quaternion
-    tf::Quaternion q_old(q(1), q(2), q(3), q(0));
-    tf::Quaternion tfq = tf::createQuaternionFromRPY(r, p, tf::getYaw(q_old)); // copy from current quaternion
-
-    // Output vector
-    VectorXd out(4);
-    out << tfq.getW(), tfq.getX(), tfq.getY(), tfq.getZ();
-    return out;
 }
 
 geometry_msgs::Vector3 normalized_acceleration(const geometry_msgs::Vector3& accel){
@@ -331,8 +321,8 @@ VectorXd getMeasurements(const std::vector<boost::shared_ptr<GraftSensor> >& top
 			actual_measurement = addElementToVector(actual_measurement, accel_meas_norm.y);
 			actual_measurement = addElementToVector(actual_measurement, accel_meas_norm.z);
 			innovation_covariance_diagonal = addElementToVector(innovation_covariance_diagonal, meas->accel_covariance[0]);
-			innovation_covariance_diagonal = addElementToVector(innovation_covariance_diagonal, meas->accel_covariance[1]);
-			innovation_covariance_diagonal = addElementToVector(innovation_covariance_diagonal, meas->accel_covariance[2]);
+			innovation_covariance_diagonal = addElementToVector(innovation_covariance_diagonal, meas->accel_covariance[4]);
+			innovation_covariance_diagonal = addElementToVector(innovation_covariance_diagonal, meas->accel_covariance[8]);
 			for(size_t j = 0; j < residuals_msgs.size(); j++){
 				geometry_msgs::Vector3 res_meas_norm = normalized_acceleration(residuals_msgs[j]->accel);
 				output_measurement_sigmas[j] = addElementToColumnMatrix(output_measurement_sigmas[j], res_meas_norm.x);
@@ -361,7 +351,7 @@ double GraftUKFAttitude::predictAndUpdate(){
 	ros::Time t = ros::Time::now();
 	double dt = (t - last_update_time_).toSec();
 	if(last_update_time_.toSec() < 0.0001){ // No previous updates
-		ROS_WARN("Negative dt - odom");
+		ROS_WARN("Negative dt, skipping update.");
 		last_update_time_ = t;
 		return 0.0;
 	}
@@ -387,6 +377,7 @@ double GraftUKFAttitude::predictAndUpdate(){
 	MatrixXd cross_covariance = crossCovariance(observation_sigma_points, predicted_mean, predicted_observation_sigma_points, predicted_measurement, alpha_, beta_, lambda);
 	MatrixXd K = cross_covariance * predicted_measurement_uncertainty.partialPivLu().inverse();
 	graft_state_ = predicted_mean + K*(z - predicted_measurement);
+	graft_state_.block(0, 0, 4, 1) = unitQuaternion(graft_state_.block(0, 0, 4, 1));
 	graft_covariance_ = predicted_covariance - K*predicted_measurement_uncertainty*K.transpose();
 
 	clearMessages(topics_);

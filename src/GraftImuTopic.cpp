@@ -84,10 +84,12 @@ geometry_msgs::Twist::Ptr twistFromQuaternions(const geometry_msgs::Quaternion& 
 }
 
 geometry_msgs::Vector3 accelFromQuaternion(const geometry_msgs::Quaternion& q, const double gravity_magnitude){
+	tf::Quaternion tfq;
+	tf::quaternionMsgToTF(q, tfq);
+  tf::Transform tft(tfq, tf::Vector3(0, 0, 0));
+	tf::Vector3 gravity(0, 0, gravity_magnitude);
 	geometry_msgs::Vector3 out;
-	out.x = 2.0*gravity_magnitude*(q.x*q.z - q.w * q.y);
-	out.y = 2.0*gravity_magnitude*(q.y*q.z + q.w*q.x);
-	out.z = -gravity_magnitude*(-q.w*q.w + q.x*q.x + q.y*q.y - q.z*q.z);
+	tf::vector3TFToMsg(tft*gravity, out);
 	return out;
 }
 
