@@ -31,73 +31,66 @@
  * Author: Chad Rockey
  */
 
-#ifndef GRAFT_ODOMETRY_TOPIC_H
-#define GRAFT_ODOMETRY_TOPIC_H
+#ifndef GRAFT_UKFABSOLUTE_H
+#define GRAFT_UKFABSOLUTE_H
 
-#include <graft/GraftSensor.h>
-#include <ros/ros.h>
 #include <Eigen/Dense>
+#include <Eigen/Cholesky>
+
+#include <graft/GraftState.h>
 #include <nav_msgs/Odometry.h>
+#include <geometry_msgs/QuaternionStamped.h>
+#include <sensor_msgs/Imu.h>
 #include <tf/transform_datatypes.h>
-#include <numeric>
+ #include <graft/GraftSensor.h>
+
+#define SIZE 13  // State size: x, y, z, qw, qx, qy, qz, vx, vy, vz, wx, wy, wz
 
 using namespace Eigen;
 
-class GraftOdometryTopic: public GraftSensor {
+class GraftUKFAbsolute{
   public:
-  	GraftOdometryTopic();
+    GraftUKFAbsolute();
+    ~GraftUKFAbsolute();
 
-  	~GraftOdometryTopic();
+	MatrixXd f(MatrixXd x, double dt);
 
-  	void callback(const nav_msgs::Odometry::ConstPtr& msg);
+	std::vector<MatrixXd > predict_sigma_points(std::vector<MatrixXd >& sigma_points, double dt);
 
-    virtual graft::GraftSensorResidual::Ptr h(const graft::GraftState& state);
+	graft::GraftStatePtr getMessageFromState();
 
-    virtual graft::GraftSensorResidual::Ptr z();
+	graft::GraftStatePtr getMessageFromState(Matrix<double, SIZE, 1>& state, Matrix<double, SIZE, SIZE>& covariance);
 
-    virtual void setName(const std::string& name);
+	double predictAndUpdate();
 
-    virtual std::string getName();
+	void setTopics(std::vector<boost::shared_ptr<GraftSensor> >& topics);
 
-    virtual void clearMessage();
+	void setInitialCovariance(std::vector<double>& P);
 
-    //virtual MatrixXd H(graft::GraftState& state);
+	void setProcessNoise(std::vector<double>& Q);
 
-    //virtual MatrixXd y(graft::GraftState& predicted);
+	void setAlpha(const double alpha);
 
-    //virtual MatrixXd R();
+	void setKappa(const double kappa);
 
-
-    void useAbsolutePose(bool absolute_pose);
-
-    void useDeltaPose(bool delta_pose);
-
-    void useVelocities(bool use_velocities);
-
-    void setTimeout(double timeout);
-
-    void setPoseCovariance(boost::array<double, 36>& cov);
-
-    void setTwistCovariance(boost::array<double, 36>& cov);
+	void setBeta(const double beta);
     
   private:
 
-  	nav_msgs::Odometry::ConstPtr getMsg();
+    Matrix<double, SIZE, 1> graft_state_;
+	Matrix<double, SIZE, 1> graft_control_;
+	Matrix<double, SIZE, SIZE> graft_covariance_;
 
-  	ros::Subscriber sub_;
-  	nav_msgs::Odometry::ConstPtr msg_;
-    nav_msgs::Odometry::ConstPtr last_msg_; // Used for delta calculations
+	Matrix<double, SIZE, SIZE> Q_;
 
-  	std::string name_;
-  	bool absolute_pose_;
-  	bool delta_pose_;
-  	bool use_velocities_;
-  	ros::Duration timeout_;
+    ros::Time last_update_time_;
+    ros::Time last_imu_time_;
 
+    double alpha_;
+    double beta_;
+    double kappa_;
 
-  	boost::array<double, 36> pose_covariance_;
-  	boost::array<double, 36> twist_covariance_;
-
+    std::vector<boost::shared_ptr<GraftSensor> > topics_;
 };
 
 #endif

@@ -66,9 +66,9 @@ void GraftParameterManager::parseNavMsgsOdometryParameters(ros::NodeHandle& tnh,
 	include_pose_ = include_pose_ || absolute_pose;
 
 	// Apply to sensor
-	//odom->useAbsolutePose(absolute_pose);
+	odom->useAbsolutePose(absolute_pose);
 	odom->useDeltaPose(delta_pose);
-	//odom->useVelocities(use_velocities);
+	odom->useVelocities(use_velocities);
   odom->setTimeout(timeout);
 
   //ROS_INFO("Abs pose: %d\nDelta pose: %d\nUse Vel: %d\nTimeout: %.3f", absolute_pose, delta_pose, use_velocities, timeout);

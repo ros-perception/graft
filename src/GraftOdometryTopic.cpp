@@ -117,7 +117,7 @@ graft::GraftSensorResidual::Ptr GraftOdometryTopic::z(){
 			// Not sure what to do about covariance here...... robot_pose_ekf was strange
 			out->twist_covariance = msg_->pose.covariance;
 		}
-	} else {
+	} else if(use_velocities_){
 		out->twist = msg_->twist.twist;
 		if(std::accumulate(twist_covariance_.begin(),twist_covariance_.end(),0.0) > 1e-15){ // Override message
 			out->twist_covariance = twist_covariance_;
@@ -137,10 +137,6 @@ graft::GraftSensorResidual::Ptr GraftOdometryTopic::z(){
   return out;
 }
 
-void GraftOdometryTopic::useDeltaPose(bool delta_pose){
-	delta_pose_ = delta_pose;
-}
-
 void GraftOdometryTopic::setTimeout(double timeout){
 	if(timeout < 1e-10){
 		timeout_ = ros::Duration(1e10); // No timeout enforced
@@ -155,6 +151,18 @@ void GraftOdometryTopic::setPoseCovariance(boost::array<double, 36>& cov){
 
 void GraftOdometryTopic::setTwistCovariance(boost::array<double, 36>& cov){
 	twist_covariance_ = cov;
+}
+
+void GraftOdometryTopic::useAbsolutePose(bool absolute_pose){
+	absolute_pose_ = absolute_pose;
+}
+
+void GraftOdometryTopic::useDeltaPose(bool delta_pose){
+	delta_pose_ = delta_pose;
+}
+
+void GraftOdometryTopic::useVelocities(bool use_velocities){
+	use_velocities_ = use_velocities;
 }
 
 nav_msgs::Odometry::ConstPtr GraftOdometryTopic::getMsg(){
