@@ -1,0 +1,9 @@
+<launch>
+
+  <node name="graft_ukf_absolute" pkg="graft" type="graft_ukf_absolute" output="screen" >
+     <rosparam file="$(find graft)/config/absolute_config.yaml" command="load" />
+     <remap from="odom_combined" to="odom_combined_absolute" />
+     <remap from="state" to="state_abs" />
+  </node>
+
+</launch>

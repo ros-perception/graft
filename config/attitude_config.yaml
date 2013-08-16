@@ -25,8 +25,8 @@ beta: 2.0
 # Initial covariance estimate
 initial_covariance: [1e-3, 1e-3, 1e-3, 1e-3, 1, 1, 1]
 
-# Process noise covariance 2x2 for velocites, 5x5 for 2d position
-process_nosie: [1e-5, 1e-5, 1e-5, 1e-5, 1e6, 1e6, 1e6]
+# Process noise covariance
+process_noise: [1e-5, 1e-5, 1e-5, 1e-5, 1e6, 1e6, 1e6]
 #process_noise: [1e-5, 0, 0, 0, 0, 0, 0,
 #                0, 1e-5, 0, 0, 0, 0, 0,
 #                0, 0, 1e-5, 0, 0, 0, 0,

@@ -3,7 +3,7 @@ filter_type: EKF # EKF or UKF - may change to be different nodes instead of a pa
 planar_output: True # Output only x, y, and rotation about z
 
 output_frame: odom # TF frame id, param name ported from robot_pose_ekf
-parent_frame_id: odom # TF frame id, override output_frame if set
+parent_frame_id: abs # TF frame id, override output_frame if set
 child_frame_id: base_link #TF frame id
 
 freq: 10.0 # In Hz, param name ported from robot_pose_ekf
@@ -22,25 +22,26 @@ alpha: 0.001
 kappa: 0.0
 beta: 2.0
 
-# Process noise covariance 2x2 for velocites, 5x5 for 2d position
-process_noise: [1e6, 0, 0,
-                0, 1e6, 0,
-                0, 0, 1e6]
+# Initial covariance estimate
+initial_covariance: [1000, 1000, 1000, 0.1, 0.1, 0.1, 0.1, 1e-9, 1e-9, 1e-9, 1e-9, 1-9, 1e-9]
+
+# Process noise covariance
+process_noise: [1, 1, 1, 1e-3, 1e-3, 1e-3, 1e-3, 1, 1, 1, 1, 1, 1]
 
 topics: {
-  base_odometry: {
-    topic: /encoder,
+  gps: {
+    topic: /enu,
     type: nav_msgs/Odometry,
-    absolute_pose: False,
+    absolute_pose: True,
     delta_pose: False, # Overrides absolute_pose
-    use_velocities: True,
-    timeout: 1.01,
+    use_velocities: False,
+    timeout: 1.0,
 
     # Row major 6x6: x, y, z, rotation about x, rotation about y, rotation about z
     # Read from message if all zero
-    override_pose_covariance: [0, 0, 0, 0, 0, 0,
-                               0, 0, 0, 0, 0, 0,
-                               0, 0, 0, 0, 0, 0,
+    override_pose_covariance: [1, 0, 0, 0, 0, 0,
+                               0, 1, 0, 0, 0, 0,
+                               0, 0, 5, 0, 0, 0,
                                0, 0, 0, 0, 0, 0,
                                0, 0, 0, 0, 0, 0,
                                0, 0, 0, 0, 0, 0],
@@ -53,6 +54,33 @@ topics: {
                                 0, 0, 0, 0, 0, 0,
                                 0, 0, 0, 0, 0, 0,
                                 0, 0, 0, 0, 0, 0],
+  },
+
+  base_odometry: {
+    topic: /encoder,
+    type: nav_msgs/Odometry,
+    absolute_pose: False,
+    delta_pose: False, # Overrides absolute_pose
+    use_velocities: True,
+    timeout: 1.0,
+
+    # Row major 6x6: x, y, z, rotation about x, rotation about y, rotation about z
+    # Read from message if all zero
+    override_pose_covariance: [0, 0, 0, 0, 0, 0,
+                               0, 0, 0, 0, 0, 0,
+                               0, 0, 0, 0, 0, 0,
+                               0, 0, 0, 0, 0, 0,
+                               0, 0, 0, 0, 0, 0,
+                               0, 0, 0, 0, 0, 0],
+
+    # Row major 6x6: vx, vy, vz, wx, wy, wz
+    # Read from message if all zero
+    override_twist_covariance: [0.001, 0, 0, 0, 0, 0,
+                                0, 0, 0, 0, 0, 0,
+                                0, 0, 0, 0, 0, 0,
+                                0, 0, 0, 0, 0, 0,
+                                0, 0, 0, 0, 0, 0,
+                                0, 0, 0, 0, 0, 0.001],
   },
 
   base_imu: {
@@ -72,8 +100,8 @@ topics: {
 
     # Row major 3x3: wx, wy, wz
     # Read from message if all zero
-    override_angular_velocity_covariance: [0, 0, 0,
-                                           0, 0, 0,
+    override_angular_velocity_covariance: [0.000000029, 0, 0,
+                                           0, 0.000000029, 0,
                                            0, 0, 0.000000029],
 
     # Row major 3x3: ax, ay, az
