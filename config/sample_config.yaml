@@ -56,7 +56,7 @@ topics: {
   },
 
   base_imu: {
-    topic: /imu/data,
+    topic: /imu,
     type: sensor_msgs/Imu,
     absolute_orientation: False,
     delta_orientation: False, # Overrides absolute_orientation

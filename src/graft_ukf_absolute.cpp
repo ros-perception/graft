@@ -76,7 +76,7 @@ void timer_callback(const ros::TimerEvent& event){
 
 	// Update Odometry
 	odom_.header.stamp = ros::Time::now();
-	odom_.header.frame_id = "odom_fused_ukfv";
+	odom_.header.frame_id = "map";
 	odom_.child_frame_id = "base_link";
 	odom_.pose.pose = state.pose;
 	odom_.twist.twist = state.twist;

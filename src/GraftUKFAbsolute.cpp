@@ -164,9 +164,6 @@ MatrixXd transformVelocitites(const MatrixXd vel, const MatrixXd quaternion){
 	out(1) = transformed.getY();
 	out(2) = transformed.getZ();
 
-	//std:: cout << vel << std::endl;
-	//std::cout << out << std::endl;
-	//std::cout << "----" << std::endl;
 	return out;
 }
 
@@ -174,14 +171,9 @@ MatrixXd GraftUKFAbsolute::f(MatrixXd x, double dt){
 	Matrix<double, SIZE, 1> out;
 	out.setZero();
 	MatrixXd rotated_linear_velocity = transformVelocitites(x.block(7, 0, 3, 1), x.block(3, 0, 4, 1));
-	//std::cout << rotated_linear_velocity << std::endl;
-	//std::cout << ".............." << std::endl;
 	out(0) = x(0)+rotated_linear_velocity(0)*dt; // x + v_absx*dt
 	out(1) = x(1)+rotated_linear_velocity(1)*dt; // y + v_absy*dt
 	out(2) = x(2)+rotated_linear_velocity(2)*dt; // z + v_absz*dt
-	//std::cout << x.block(0, 0, 3, 1) << std::endl;
-	//std::cout << out.block(0, 0, 3, 1) << std::endl;
-	//std::cout << "===============================" << std::endl;
 	Matrix<double, 4, 1> new_q = updatedQuaternion(x.block(3, 0, 4, 1), x(10), x(11), x(12), dt);
 	out.block(3, 0, 4, 1) = new_q; // quaternion
 	out(7) = x(7); // vx
@@ -291,7 +283,6 @@ VectorXd getMeasurements(const std::vector<boost::shared_ptr<GraftSensor> >& top
 		}
 		// Position X
 		if(meas->pose_covariance[0] > 1e-20){
-			std::cout << "x" << std::endl;
 			actual_measurement = addElementToVector(actual_measurement, meas->pose.position.x);
 			innovation_covariance_diagonal = addElementToVector(innovation_covariance_diagonal, meas->pose_covariance[0]);
 			for(size_t j = 0; j < residuals_msgs.size(); j++){
@@ -300,7 +291,6 @@ VectorXd getMeasurements(const std::vector<boost::shared_ptr<GraftSensor> >& top
 		}
 		// Position Y
 		if(meas->pose_covariance[7] > 1e-20){
-			std::cout << "y" << std::endl;
 			actual_measurement = addElementToVector(actual_measurement, meas->pose.position.y);
 			innovation_covariance_diagonal = addElementToVector(innovation_covariance_diagonal, meas->pose_covariance[7]);
 			for(size_t j = 0; j < residuals_msgs.size(); j++){
@@ -309,7 +299,6 @@ VectorXd getMeasurements(const std::vector<boost::shared_ptr<GraftSensor> >& top
 		}
 		// Position Z
 		if(meas->pose_covariance[14] > 1e-20){
-			std::cout << "z" << std::endl;
 			actual_measurement = addElementToVector(actual_measurement, meas->pose.position.z);
 			innovation_covariance_diagonal = addElementToVector(innovation_covariance_diagonal, meas->pose_covariance[14]);
 			for(size_t j = 0; j < residuals_msgs.size(); j++){
@@ -318,7 +307,6 @@ VectorXd getMeasurements(const std::vector<boost::shared_ptr<GraftSensor> >& top
 		}
 		// Linear Velocity X
 		if(meas->twist_covariance[0] > 1e-20){
-			//std::cout << "vx" << std::endl;
 			actual_measurement = addElementToVector(actual_measurement, meas->twist.linear.x);
 			innovation_covariance_diagonal = addElementToVector(innovation_covariance_diagonal, meas->twist_covariance[0]);
 			for(size_t j = 0; j < residuals_msgs.size(); j++){
@@ -327,7 +315,6 @@ VectorXd getMeasurements(const std::vector<boost::shared_ptr<GraftSensor> >& top
 		}
 		// Linear Velocity Y
 		if(meas->twist_covariance[7] > 1e-20){
-			//std::cout << "vy" << std::endl;
 			actual_measurement = addElementToVector(actual_measurement, meas->twist.linear.y);
 			innovation_covariance_diagonal = addElementToVector(innovation_covariance_diagonal, meas->twist_covariance[7]);
 			for(size_t j = 0; j < residuals_msgs.size(); j++){
@@ -336,7 +323,6 @@ VectorXd getMeasurements(const std::vector<boost::shared_ptr<GraftSensor> >& top
 		}
 		// Linear Velocity Z
 		if(meas->twist_covariance[14] > 1e-20){
-			//std::cout << "vz" << std::endl;
 			actual_measurement = addElementToVector(actual_measurement, meas->twist.linear.z);
 			innovation_covariance_diagonal = addElementToVector(innovation_covariance_diagonal, meas->twist_covariance[14]);
 			for(size_t j = 0; j < residuals_msgs.size(); j++){
@@ -345,7 +331,6 @@ VectorXd getMeasurements(const std::vector<boost::shared_ptr<GraftSensor> >& top
 		}
 		// Angular Velocity X
 		if(meas->twist_covariance[21] > 1e-20){
-			//std::cout << "wx" << std::endl;
 			actual_measurement = addElementToVector(actual_measurement, meas->twist.angular.x);
 			innovation_covariance_diagonal = addElementToVector(innovation_covariance_diagonal, meas->twist_covariance[21]);
 			for(size_t j = 0; j < residuals_msgs.size(); j++){
@@ -354,7 +339,6 @@ VectorXd getMeasurements(const std::vector<boost::shared_ptr<GraftSensor> >& top
 		}
 		// Angular Velocity Y
 		if(meas->twist_covariance[28] > 1e-20){
-			//std::cout << "wy" << std::endl;
 			actual_measurement = addElementToVector(actual_measurement, meas->twist.angular.y);
 			innovation_covariance_diagonal = addElementToVector(innovation_covariance_diagonal, meas->twist_covariance[28]);
 			for(size_t j = 0; j < residuals_msgs.size(); j++){
@@ -363,7 +347,6 @@ VectorXd getMeasurements(const std::vector<boost::shared_ptr<GraftSensor> >& top
 		}
 		// Angular Velocity Z
 		if(meas->twist_covariance[35] > 1e-20){
-			//std::cout << "wz" << std::endl;
 			actual_measurement = addElementToVector(actual_measurement, meas->twist.angular.z);
 			innovation_covariance_diagonal = addElementToVector(innovation_covariance_diagonal, meas->twist_covariance[35]);
 			for(size_t j = 0; j < residuals_msgs.size(); j++){
@@ -420,9 +403,6 @@ double GraftUKFAbsolute::predictAndUpdate(){
 	graft_state_.block(3, 0, 4, 1) = unitQuaternion(graft_state_.block(3, 0, 4, 1));
 
 	graft_covariance_ = predicted_covariance - K*predicted_measurement_uncertainty*K.transpose();
-
-	//std::cout << graft_covariance_.block(3, 3, 4, 4) << std::endl;
-	std::cout << "----------------------------------------------------------" << std::endl;
 
 	clearMessages(topics_);
 	return dt;
