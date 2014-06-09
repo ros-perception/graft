@@ -124,7 +124,7 @@ boost::array<double, 36> largeCovarianceFromSmallCovariance(const boost::array<d
 
 graft::GraftSensorResidual::Ptr GraftImuTopic::z(){
 	if(msg_ == NULL || ros::Time::now() - timeout_ > msg_->header.stamp){
-		ROS_WARN_THROTTLE(5.0, "IMU timeout");
+		ROS_WARN_THROTTLE(5.0, "%s (IMU) timeout", name_.c_str());
 		return graft::GraftSensorResidual::Ptr();
 	}
 	graft::GraftSensorResidual::Ptr out(new graft::GraftSensorResidual());

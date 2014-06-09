@@ -96,7 +96,7 @@ graft::GraftSensorResidual::Ptr GraftOdometryTopic::h(const graft::GraftState& s
 
 graft::GraftSensorResidual::Ptr GraftOdometryTopic::z(){
 	if(msg_ == NULL || ros::Time::now() - timeout_ > msg_->header.stamp){
-		ROS_WARN_THROTTLE(5.0, "Odometry timeout");
+		ROS_WARN_THROTTLE(5.0, "%s (Odometry) timeout", name_.c_str());
 		return graft::GraftSensorResidual::Ptr();
 	}
 	graft::GraftSensorResidual::Ptr out(new graft::GraftSensorResidual());
