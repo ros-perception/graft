@@ -1,7 +1,17 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(graft)
 
-find_package(catkin REQUIRED COMPONENTS message_generation rosconsole roscpp geometry_msgs sensor_msgs nav_msgs tf)
+find_package(catkin REQUIRED
+  COMPONENTS
+    cmake_modules
+    geometry_msgs
+    message_generation
+    nav_msgs
+    rosconsole
+    roscpp
+    sensor_msgs
+    tf
+)
 
 find_package(Eigen REQUIRED COMPONENTS Dense Cholesky)
 include_directories(${Eigen_INCLUDE_DIRS})
