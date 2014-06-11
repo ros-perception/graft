@@ -53,6 +53,9 @@ nav_msgs::Odometry odom_;
 bool publish_tf_;
 boost::shared_ptr<tf::TransformBroadcaster> broadcaster_;
 
+std::string parent_frame_id_;
+std::string child_frame_id_;
+
 void publishTF(const nav_msgs::Odometry& msg){
   geometry_msgs::TransformStamped tf;
   tf.header.stamp = msg.header.stamp;
@@ -76,8 +79,8 @@ void timer_callback(const ros::TimerEvent& event){
 
 	// Update Odometry
 	odom_.header.stamp = ros::Time::now();
-	odom_.header.frame_id = "map";
-	odom_.child_frame_id = "base_link";
+	odom_.header.frame_id = parent_frame_id_;
+	odom_.child_frame_id = child_frame_id_;
 	odom_.pose.pose = state.pose;
 	odom_.twist.twist = state.twist;
 	odom_pub.publish(odom_);
@@ -101,6 +104,9 @@ int main(int argc, char **argv)
 	manager.loadParameters(topics, subs);
 
 	publish_tf_ = manager.getPublishTF();
+
+	parent_frame_id_ = manager.getParentFrameID();
+	child_frame_id_ = manager.getChildFrameID();
 
 	// Set up the E
 	std::vector<double> initial_covariance = manager.getInitialCovariance();
