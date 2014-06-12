@@ -27,45 +27,61 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-/* 
+/*
  * Author: Chad Rockey
  */
 
- #include <graft/GraftOdometryTopic.h>
+#include <graft/GraftOdometryTopic.h>
 
-
-GraftOdometryTopic::GraftOdometryTopic(): absolute_pose_(false), delta_pose_(false),
-                                          use_velocities_(false), timeout_(1.0){
-
+GraftOdometryTopic::GraftOdometryTopic():
+    absolute_pose_(false), delta_pose_(false), use_velocities_(false), timeout_(1.0)
+{
 }
 
-GraftOdometryTopic::~GraftOdometryTopic(){
 
+GraftOdometryTopic::~GraftOdometryTopic()
+{
 }
 
-void GraftOdometryTopic::callback(const nav_msgs::Odometry::ConstPtr& msg){
-	msg_ = msg;
+
+void GraftOdometryTopic::callback(const nav_msgs::Odometry::ConstPtr& msg)
+{
+  msg_ = msg;
 }
 
-void GraftOdometryTopic::setName(const std::string& name){
-	name_ = name;
+
+void GraftOdometryTopic::setName(const std::string& name)
+{
+  name_ = name;
 }
 
-std::string GraftOdometryTopic::getName(){
-	return name_;
+
+std::string GraftOdometryTopic::getName()
+{
+  return name_;
 }
 
-void GraftOdometryTopic::clearMessage(){
-	msg_ = nav_msgs::Odometry::ConstPtr();
+
+void GraftOdometryTopic::clearMessage()
+{
+  msg_ = nav_msgs::Odometry::ConstPtr();
 }
 
-geometry_msgs::Twist::Ptr twistFromPoses(const geometry_msgs::Pose& pose, const geometry_msgs::Pose& last_pose, const double dt){
-	geometry_msgs::Twist::Ptr out(new geometry_msgs::Twist());
-	if(dt < 1e-10){
-		return out;
-	}
-	tf::Quaternion tfq2, tfq1;
-	tf::quaternionMsgToTF(pose.orientation, tfq2);
+
+geometry_msgs::Twist::Ptr twistFromPoses(
+    const geometry_msgs::Pose& pose,
+    const geometry_msgs::Pose& last_pose,
+    const double dt)
+{
+  geometry_msgs::Twist::Ptr out(new geometry_msgs::Twist());
+
+  if (dt < 1e-10)
+  {
+    return out;
+  }
+
+  tf::Quaternion tfq2, tfq1;
+  tf::quaternionMsgToTF(pose.orientation, tfq2);
   tf::quaternionMsgToTF(last_pose.orientation, tfq1);
   tf::Transform tf2(tfq2, tf::Vector3(pose.position.x, pose.position.y, pose.position.z));
   tf::Transform tf1(tfq1, tf::Vector3(last_pose.position.x, last_pose.position.y, last_pose.position.z));
@@ -79,92 +95,132 @@ geometry_msgs::Twist::Ptr twistFromPoses(const geometry_msgs::Pose& pose, const 
   dtf.getBasis().getEulerYPR(rZ, rY, rX);
   out->angular.x = rX/dt;
   out->angular.y = rY/dt;
-	out->angular.z = rZ/dt;
+  out->angular.z = rZ/dt;
 
-	return out;
-}
-
-
-graft::GraftSensorResidual::Ptr GraftOdometryTopic::h(const graft::GraftState& state){
-	graft::GraftSensorResidual::Ptr out(new graft::GraftSensorResidual());
-	out->header = state.header;
-	out->name = name_;
-	out->pose = state.pose;
-	out->twist = state.twist;
   return out;
 }
 
-graft::GraftSensorResidual::Ptr GraftOdometryTopic::z(){
-	if(msg_ == NULL || ros::Time::now() - timeout_ > msg_->header.stamp){
-		ROS_WARN_THROTTLE(5.0, "%s (Odometry) timeout", name_.c_str());
-		return graft::GraftSensorResidual::Ptr();
-	}
-	graft::GraftSensorResidual::Ptr out(new graft::GraftSensorResidual());
-	out->header = msg_->header;
-	out->name = name_;
 
-	if(delta_pose_){
-		if(last_msg_ == NULL){
-			last_msg_ = msg_;
-			return graft::GraftSensorResidual::Ptr();
-		}
-		double dt = (msg_->header.stamp - last_msg_->header.stamp).toSec();
-		out->twist = *twistFromPoses(msg_->pose.pose, last_msg_->pose.pose, dt);
-		last_msg_ = msg_;
-		if(std::accumulate(twist_covariance_.begin(),twist_covariance_.end(),0.0) > 1e-15){ // Override message
-			out->twist_covariance = twist_covariance_;
-		} else { // Use from message
-			// Not sure what to do about covariance here...... robot_pose_ekf was strange
-			out->twist_covariance = msg_->pose.covariance;
-		}
-	} else if(use_velocities_){
-		out->twist = msg_->twist.twist;
-		if(std::accumulate(twist_covariance_.begin(),twist_covariance_.end(),0.0) > 1e-15){ // Override message
-			out->twist_covariance = twist_covariance_;
-		} else { // Use from message
-			out->twist_covariance = msg_->twist.covariance;
-		}
-	}
-
-	if(absolute_pose_ && !delta_pose_){ // Delta Pose and Absolute Pose are incompatible
-		out->pose = msg_->pose.pose;
-		if(std::accumulate(pose_covariance_.begin(),pose_covariance_.end(),0.0) > 1e-15){ // Override message
-			out->pose_covariance = pose_covariance_;
-		} else { // Use from message
-			out->pose_covariance = msg_->pose.covariance;
-		}
-	}
+graft::GraftSensorResidual::Ptr GraftOdometryTopic::h(const graft::GraftState& state)
+{
+  graft::GraftSensorResidual::Ptr out(new graft::GraftSensorResidual());
+  out->header = state.header;
+  out->name = name_;
+  out->pose = state.pose;
+  out->twist = state.twist;
   return out;
 }
 
-void GraftOdometryTopic::setTimeout(double timeout){
-	if(timeout < 1e-10){
-		timeout_ = ros::Duration(1e10); // No timeout enforced
-		return;
-	}
-	timeout_ = ros::Duration(timeout);
+
+graft::GraftSensorResidual::Ptr GraftOdometryTopic::z()
+{
+  if (msg_ == NULL || ros::Time::now() - timeout_ > msg_->header.stamp)
+  {
+    ROS_WARN_THROTTLE(5.0, "%s (Odometry) timeout", name_.c_str());
+    return graft::GraftSensorResidual::Ptr();
+  }
+
+  graft::GraftSensorResidual::Ptr out(new graft::GraftSensorResidual());
+  out->header = msg_->header;
+  out->name = name_;
+
+  if (delta_pose_)
+  {
+    if (last_msg_ == NULL)
+    {
+      last_msg_ = msg_;
+      return graft::GraftSensorResidual::Ptr();
+    }
+    double dt = (msg_->header.stamp - last_msg_->header.stamp).toSec();
+    out->twist = *twistFromPoses(msg_->pose.pose, last_msg_->pose.pose, dt);
+    last_msg_ = msg_;
+    if (std::accumulate(twist_covariance_.begin(),twist_covariance_.end(),0.0) > 1e-15)
+    {
+      // Override message
+      out->twist_covariance = twist_covariance_;
+    }
+    else
+    {
+      // Use from message
+      // Not sure what to do about covariance here...... robot_pose_ekf was strange
+      out->twist_covariance = msg_->pose.covariance;
+    }
+  }
+  else if(use_velocities_)
+  {
+    out->twist = msg_->twist.twist;
+    if (std::accumulate(twist_covariance_.begin(),twist_covariance_.end(),0.0) > 1e-15)
+    {
+      // Override message
+      out->twist_covariance = twist_covariance_;
+    }
+    else
+    {
+      // Use from message
+      out->twist_covariance = msg_->twist.covariance;
+    }
+  }
+
+  if (absolute_pose_ && !delta_pose_)  // Delta Pose and Absolute Pose are incompatible
+  {
+    out->pose = msg_->pose.pose;
+    if (std::accumulate(pose_covariance_.begin(),pose_covariance_.end(),0.0) > 1e-15)
+    {
+      // Override message
+      out->pose_covariance = pose_covariance_;
+    }
+    else
+    {
+      // Use from message
+      out->pose_covariance = msg_->pose.covariance;
+    }
+  }
+  return out;
 }
 
-void GraftOdometryTopic::setPoseCovariance(boost::array<double, 36>& cov){
-	pose_covariance_ = cov;
+
+void GraftOdometryTopic::setTimeout(double timeout)
+{
+  if (timeout < 1e-10)
+  {
+    timeout_ = ros::Duration(1e10);  // No timeout enforced
+    return;
+  }
+  timeout_ = ros::Duration(timeout);
 }
 
-void GraftOdometryTopic::setTwistCovariance(boost::array<double, 36>& cov){
-	twist_covariance_ = cov;
+
+void GraftOdometryTopic::setPoseCovariance(boost::array<double, 36>& cov)
+{
+  pose_covariance_ = cov;
 }
 
-void GraftOdometryTopic::useAbsolutePose(bool absolute_pose){
-	absolute_pose_ = absolute_pose;
+
+void GraftOdometryTopic::setTwistCovariance(boost::array<double, 36>& cov)
+{
+  twist_covariance_ = cov;
 }
 
-void GraftOdometryTopic::useDeltaPose(bool delta_pose){
-	delta_pose_ = delta_pose;
+
+void GraftOdometryTopic::useAbsolutePose(bool absolute_pose)
+{
+  absolute_pose_ = absolute_pose;
 }
 
-void GraftOdometryTopic::useVelocities(bool use_velocities){
-	use_velocities_ = use_velocities;
+
+void GraftOdometryTopic::useDeltaPose(bool delta_pose)
+{
+  delta_pose_ = delta_pose;
 }
 
-nav_msgs::Odometry::ConstPtr GraftOdometryTopic::getMsg(){
-	return msg_;
+
+void GraftOdometryTopic::useVelocities(bool use_velocities)
+{
+  use_velocities_ = use_velocities;
+}
+
+
+nav_msgs::Odometry::ConstPtr GraftOdometryTopic::getMsg()
+{
+  return msg_;
 }

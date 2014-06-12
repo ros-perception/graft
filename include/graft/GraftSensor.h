@@ -31,8 +31,8 @@
  * Author: Chad Rockey
  */
 
-#ifndef GRAFT_SENSOR_H_
-#define GRAFT_SENSOR_H_
+#ifndef GRAFT_INCLUDE_GRAFT_GRAFT_SENSOR_H_
+#define GRAFT_INCLUDE_GRAFT_GRAFT_SENSOR_H_
 
 #include <ros/ros.h>
 #include <Eigen/Dense>
@@ -43,31 +43,29 @@
 
 using namespace Eigen;
 
-class GraftSensor{
-  public:
-    virtual ~GraftSensor(){}
+class GraftSensor
+{
+public:
+  virtual ~GraftSensor(){}
 
-    //virtual MatrixXd H(graft::GraftState& state) = 0;
+  //virtual MatrixXd H(graft::GraftState& state) = 0;
 
-    virtual graft::GraftSensorResidual::Ptr z() = 0;
+  virtual graft::GraftSensorResidual::Ptr z() = 0;
 
-    virtual graft::GraftSensorResidual::Ptr h(const graft::GraftState& state) = 0;
+  virtual graft::GraftSensorResidual::Ptr h(const graft::GraftState& state) = 0;
 
-    virtual void setName(const std::string& name) = 0;
+  virtual void setName(const std::string& name) = 0;
 
-    virtual std::string getName() = 0;
+  virtual std::string getName() = 0;
 
-    virtual void clearMessage() = 0;
+  virtual void clearMessage() = 0;
 
-    //virtual graft::GraftSensorResidual y(graft::GraftState& predicted) = 0;
+  //virtual graft::GraftSensorResidual y(graft::GraftState& predicted) = 0;
 
-    //virtual MatrixXd R() = 0;
+  //virtual MatrixXd R() = 0;
 
-  private:
-
-    
-
+private:
     
 };
 
-#endif
+#endif  // GRAFT_INCLUDE_GRAFT_GRAFT_SENSOR_H_

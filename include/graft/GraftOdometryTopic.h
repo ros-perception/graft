@@ -27,12 +27,12 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-/* 
+/*
  * Author: Chad Rockey
  */
 
-#ifndef GRAFT_ODOMETRY_TOPIC_H
-#define GRAFT_ODOMETRY_TOPIC_H
+#ifndef GRAFT_INCLUDE_GRAFT_GRAFT_ODOMETRY_TOPIC_H
+#define GRAFT_INCLUDE_GRAFT_GRAFT_ODOMETRY_TOPIC_H
 
 #include <graft/GraftSensor.h>
 #include <ros/ros.h>
@@ -43,61 +43,58 @@
 
 using namespace Eigen;
 
-class GraftOdometryTopic: public GraftSensor {
-  public:
-  	GraftOdometryTopic();
+class GraftOdometryTopic: public GraftSensor
+{
+public:
+  GraftOdometryTopic();
 
-  	~GraftOdometryTopic();
+  ~GraftOdometryTopic();
 
-  	void callback(const nav_msgs::Odometry::ConstPtr& msg);
+  void callback(const nav_msgs::Odometry::ConstPtr& msg);
 
-    virtual graft::GraftSensorResidual::Ptr h(const graft::GraftState& state);
+  virtual graft::GraftSensorResidual::Ptr h(const graft::GraftState& state);
 
-    virtual graft::GraftSensorResidual::Ptr z();
+  virtual graft::GraftSensorResidual::Ptr z();
 
-    virtual void setName(const std::string& name);
+  virtual void setName(const std::string& name);
 
-    virtual std::string getName();
+  virtual std::string getName();
 
-    virtual void clearMessage();
+  virtual void clearMessage();
 
-    //virtual MatrixXd H(graft::GraftState& state);
+  //virtual MatrixXd H(graft::GraftState& state);
 
-    //virtual MatrixXd y(graft::GraftState& predicted);
+  //virtual MatrixXd y(graft::GraftState& predicted);
 
-    //virtual MatrixXd R();
+  //virtual MatrixXd R();
 
+  void useAbsolutePose(bool absolute_pose);
 
-    void useAbsolutePose(bool absolute_pose);
+  void useDeltaPose(bool delta_pose);
 
-    void useDeltaPose(bool delta_pose);
+  void useVelocities(bool use_velocities);
 
-    void useVelocities(bool use_velocities);
+  void setTimeout(double timeout);
 
-    void setTimeout(double timeout);
+  void setPoseCovariance(boost::array<double, 36>& cov);
 
-    void setPoseCovariance(boost::array<double, 36>& cov);
+  void setTwistCovariance(boost::array<double, 36>& cov);
 
-    void setTwistCovariance(boost::array<double, 36>& cov);
-    
-  private:
+private:
+  nav_msgs::Odometry::ConstPtr getMsg();
 
-  	nav_msgs::Odometry::ConstPtr getMsg();
+  ros::Subscriber sub_;
+  nav_msgs::Odometry::ConstPtr msg_;
+  nav_msgs::Odometry::ConstPtr last_msg_; // Used for delta calculations
 
-  	ros::Subscriber sub_;
-  	nav_msgs::Odometry::ConstPtr msg_;
-    nav_msgs::Odometry::ConstPtr last_msg_; // Used for delta calculations
+  std::string name_;
+  bool absolute_pose_;
+  bool delta_pose_;
+  bool use_velocities_;
+  ros::Duration timeout_;
 
-  	std::string name_;
-  	bool absolute_pose_;
-  	bool delta_pose_;
-  	bool use_velocities_;
-  	ros::Duration timeout_;
-
-
-  	boost::array<double, 36> pose_covariance_;
-  	boost::array<double, 36> twist_covariance_;
-
+  boost::array<double, 36> pose_covariance_;
+  boost::array<double, 36> twist_covariance_;
 };
 
-#endif
+#endif  // GRAFT_INCLUDE_GRAFT_GRAFT_ODOMETRY_TOPIC_H
