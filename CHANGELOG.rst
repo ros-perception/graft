@@ -2,7 +2,7 @@
 Changelog for package graft
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.2.0 (2014-06-11)
+------------------
 * Initial release
 * Contributors: Chad Rockey, Michael Ferguson, Austin Hendrix
