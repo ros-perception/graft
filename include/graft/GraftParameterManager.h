@@ -27,84 +27,84 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-/* 
+/*
  * Author: Chad Rockey
  */
 
-#ifndef GRAFT_PARAMETER_MANAGER_H
-#define GRAFT_PARAMETER_MANAGER_H
+#ifndef GRAFT_INCLUDE_GRAFT_GRAFT_PARAMETER_MANAGER_H
+#define GRAFT_INCLUDE_GRAFT_GRAFT_PARAMETER_MANAGER_H
 
 #include <ros/ros.h>
 #include <graft/GraftSensor.h>
 
 #include <graft/GraftOdometryTopic.h>
- #include <graft/GraftImuTopic.h>
+#include <graft/GraftImuTopic.h>
 
-class GraftParameterManager{
-  public:
-    GraftParameterManager(ros::NodeHandle n, ros::NodeHandle pnh);
+class GraftParameterManager
+{
+public:
+  GraftParameterManager(ros::NodeHandle n, ros::NodeHandle pnh);
 
-    ~GraftParameterManager();
-    
-    void loadParameters(std::vector<boost::shared_ptr<GraftSensor> >& topics, std::vector<ros::Subscriber>& subs);
+  ~GraftParameterManager();
 
-    void parseNavMsgsOdometryParameters(ros::NodeHandle& tnh, boost::shared_ptr<GraftOdometryTopic>& odom);
+  void loadParameters(std::vector<boost::shared_ptr<GraftSensor> >& topics, std::vector<ros::Subscriber>& subs);
 
-    void parseSensorMsgsIMUParameters(ros::NodeHandle& tnh, boost::shared_ptr<GraftImuTopic>& imu);
+  void parseNavMsgsOdometryParameters(ros::NodeHandle& tnh, boost::shared_ptr<GraftOdometryTopic>& odom);
 
-    std::string getFilterType();
+  void parseSensorMsgsIMUParameters(ros::NodeHandle& tnh, boost::shared_ptr<GraftImuTopic>& imu);
 
-    bool getPlanarOutput();
+  std::string getFilterType();
 
-    std::string getParentFrameID();
+  bool getPlanarOutput();
 
-    std::string getChildFrameID();
+  std::string getParentFrameID();
 
-    double getUpdateRate();
+  std::string getChildFrameID();
 
-    std::string getUpdateTopic();
+  double getUpdateRate();
 
-    double getdtOveride();
+  std::string getUpdateTopic();
 
-    int getQueueSize();
+  double getdtOveride();
 
-    bool getIncludePose();
+  int getQueueSize();
 
-    bool getPublishTF();
+  bool getIncludePose();
 
-    std::vector<double> getInitialCovariance();
+  bool getPublishTF();
 
-    std::vector<double> getProcessNoise();
+  std::vector<double> getInitialCovariance();
 
-    double getAlpha();
+  std::vector<double> getProcessNoise();
 
-    double getKappa();
+  double getAlpha();
 
-    double getBeta();
+  double getKappa();
 
-  private:
-    
-    ros::NodeHandle n_;
-    ros::NodeHandle pnh_;
+  double getBeta();
 
-    std::string filter_type_; // EKF or UKF
-    bool planar_output_; // Output in 2D instead of 3D
-    std::string parent_frame_id_;
-    std::string child_frame_id_;
-    double update_rate_; // How often to update
-    std::string update_topic_; // Update when this topic arrives
-    double dt_override_; // Overrides the dt between updates, ignored if 0
-    int queue_size_;
-    bool publish_tf_;
-    std::vector<double> initial_covariance_;
-    std::vector<double> process_noise_;
-    double alpha_;
-    double kappa_;
-    double beta_;
+private:
 
-    // Derived parameters for filter behavior
-    bool include_pose_;
+  ros::NodeHandle n_;
+  ros::NodeHandle pnh_;
 
+  std::string filter_type_;  // EKF or UKF
+  bool planar_output_;  // Output in 2D instead of 3D
+  std::string parent_frame_id_;
+  std::string child_frame_id_;
+  double update_rate_;  // How often to update
+  std::string update_topic_;  // Update when this topic arrives
+  double dt_override_;  // Overrides the dt between updates, ignored if 0
+  int queue_size_;
+  bool publish_tf_;
+  std::vector<double> initial_covariance_;
+  std::vector<double> process_noise_;
+  double alpha_;
+  double kappa_;
+  double beta_;
+
+  // Derived parameters for filter behavior
+  bool include_pose_;
 };
 
-#endif
+#endif  // GRAFT_INCLUDE_GRAFT_GRAFT_PARAMETER_MANAGER_H
