@@ -115,7 +115,7 @@ int main(int argc, char **argv)
 	ros::init(argc, argv, "graft_ukf_velocity");
 	ros::NodeHandle n;
 	ros::NodeHandle pnh("~");
-	state_pub = n.advertise<graft::GraftState>("state", 5);
+	state_pub = pnh.advertise<graft::GraftState>("state", 5);
 	odom_pub = n.advertise<nav_msgs::Odometry>("odom_combined", 5);
 
 	// Load parameters
