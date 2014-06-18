@@ -27,12 +27,12 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-/* 
+/*
  * Author: Chad Rockey
  */
 
-#ifndef GRAFT_IMU_TOPIC_H
-#define GRAFT_IMU_TOPIC_H
+#ifndef GRAFT_INCLUDE_GRAFT_GRAFT_IMU_TOPIC_H
+#define GRAFT_INCLUDE_GRAFT_GRAFT_IMU_TOPIC_H
 
 #include <graft/GraftSensor.h>
 #include <ros/ros.h>
@@ -43,65 +43,65 @@
 
 using namespace Eigen;
 
-class GraftImuTopic: public GraftSensor {
-  public:
-  	GraftImuTopic();
+class GraftImuTopic: public GraftSensor
+{
+public:
+  GraftImuTopic();
 
-  	~GraftImuTopic();
+  ~GraftImuTopic();
 
-  	void callback(const sensor_msgs::Imu::ConstPtr& msg);
+  void callback(const sensor_msgs::Imu::ConstPtr& msg);
 
-    virtual graft::GraftSensorResidual::Ptr h(const graft::GraftState& state);
+  virtual graft::GraftSensorResidual::Ptr h(const graft::GraftState& state);
 
-    virtual graft::GraftSensorResidual::Ptr z();
+  virtual graft::GraftSensorResidual::Ptr z();
 
-    virtual void setName(const std::string& name);
+  virtual void setName(const std::string& name);
 
-    virtual std::string getName();
+  virtual std::string getName();
 
-    virtual void clearMessage();
+  virtual void clearMessage();
 
-    //virtual MatrixXd H(graft::GraftState& state);
+  //virtual MatrixXd H(graft::GraftState& state);
 
-    //virtual MatrixXd y(graft::GraftState& predicted);
+  //virtual MatrixXd y(graft::GraftState& predicted);
 
-    //virtual MatrixXd R();
+  //virtual MatrixXd R();
 
-    //void useAbsoluteOrientation(bool absolute_orientation);
+  //void useAbsoluteOrientation(bool absolute_orientation);
 
-    void useDeltaOrientation(bool delta_orientation);
+  void useDeltaOrientation(bool delta_orientation);
 
-    //void useVelocities(bool use_velocities);
+  //void useVelocities(bool use_velocities);
 
-    //void useAccelerations(bool use_accelerations);
+  //void useAccelerations(bool use_accelerations);
 
-    void setTimeout(double timeout);
+  void setTimeout(double timeout);
 
-    void setOrientationCovariance(boost::array<double, 9>& cov);
+  void setOrientationCovariance(boost::array<double, 9>& cov);
 
-    void setAngularVelocityCovariance(boost::array<double, 9>& cov);
+  void setAngularVelocityCovariance(boost::array<double, 9>& cov);
 
-    void setLinearAccelerationCovariance(boost::array<double, 9>& cov);
-    
-  private:
+  void setLinearAccelerationCovariance(boost::array<double, 9>& cov);
 
-    sensor_msgs::Imu::ConstPtr getMsg();
+private:
 
-  	ros::Subscriber sub_;
-  	sensor_msgs::Imu::ConstPtr msg_;
-    sensor_msgs::Imu::ConstPtr last_msg_; // Used for delta calculations
+  sensor_msgs::Imu::ConstPtr getMsg();
 
-  	std::string name_;
-  	bool absolute_orientation_;
-  	bool delta_orientation_;
-  	bool use_velocities_;
-    bool use_accelerations_;
-  	ros::Duration timeout_;
+  ros::Subscriber sub_;
+  sensor_msgs::Imu::ConstPtr msg_;
+  sensor_msgs::Imu::ConstPtr last_msg_;  // Used for delta calculations
 
-    boost::array<double, 9> orientation_covariance_;
-  	boost::array<double, 9> angular_velocity_covariance_;
-    boost::array<double, 9> linear_acceleration_covariance_;
+  std::string name_;
+  bool absolute_orientation_;
+  bool delta_orientation_;
+  bool use_velocities_;
+  bool use_accelerations_;
+  ros::Duration timeout_;
 
+  boost::array<double, 9> orientation_covariance_;
+  boost::array<double, 9> angular_velocity_covariance_;
+  boost::array<double, 9> linear_acceleration_covariance_;
 };
 
-#endif
+#endif  // GRAFT_INCLUDE_GRAFT_GRAFT_IMU_TOPIC_H
