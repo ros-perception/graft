@@ -2,8 +2,8 @@
 Changelog for package graft
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.2.1 (2015-03-13)
+------------------
 * update package.xml to have an actual description
 * Inintialize covariances in topics
   Publish state relative to node name
