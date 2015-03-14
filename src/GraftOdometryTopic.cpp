@@ -36,6 +36,10 @@
 GraftOdometryTopic::GraftOdometryTopic():
     absolute_pose_(false), delta_pose_(false), use_velocities_(false), timeout_(1.0)
 {
+  for( int i=0; i<36; i++ ) {
+    pose_covariance_[i] = 0.0;
+    twist_covariance_[i] = 0.0;
+  }
 }
 
 

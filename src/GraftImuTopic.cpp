@@ -36,6 +36,11 @@
 
 GraftImuTopic::GraftImuTopic()
 {
+  for( int i=0; i<9; i++ ) {
+    orientation_covariance_[i] = 0.0;
+  	angular_velocity_covariance_[i] = 0.0;
+    linear_acceleration_covariance_[i] = 0.0;
+  }
 }
 
 
