@@ -35,7 +35,7 @@
 
 
 // Commonly used parameter loading function
-template <unsigned long SIZE>
+template <std::size_t SIZE>
 bool load_rosparam_array(ros::NodeHandle& nh,
                          const std::string& param_name,
                          boost::array<double, SIZE>& values)
