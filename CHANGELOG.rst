@@ -2,6 +2,12 @@
 Changelog for package graft
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* fix compilation on 32-bit systems
+* update maintainer email
+* Contributors: Michael Ferguson
+
 0.2.1 (2015-03-13)
 ------------------
 * update package.xml to have an actual description
