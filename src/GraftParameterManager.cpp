@@ -257,8 +257,17 @@ void GraftParameterManager::loadParameters(
         odom->setName(topic_name);
         topics.push_back(odom);
 
+        // Should we specify nodelay so that packets arrive without delay
+        ros::TransportHints hints;
+        bool tcp_nodelay;
+        if (tnh.getParam("no_delay", tcp_nodelay))
+        {
+          if (tcp_nodelay)
+            hints.tcpNoDelay();
+        }
+
         // Subscribe to topic
-        ros::Subscriber sub = n_.subscribe(full_topic, queue_size_, &GraftOdometryTopic::callback, odom);
+        ros::Subscriber sub = n_.subscribe(full_topic, queue_size_, &GraftOdometryTopic::callback, odom, hints);
         subs.push_back(sub);
 
         // Parse rest of parameters
@@ -273,13 +282,22 @@ void GraftParameterManager::loadParameters(
           continue;
         }
 
-        // Create Odometry object
+        // Create Imu object
         boost::shared_ptr<GraftImuTopic> imu(new GraftImuTopic());
         imu->setName(topic_name);
         topics.push_back(imu);
 
+        // Should we specify nodelay so that packets arrive without delay
+        ros::TransportHints hints;
+        bool tcp_nodelay;
+        if (tnh.getParam("no_delay", tcp_nodelay))
+        {
+          if (tcp_nodelay)
+            hints.tcpNoDelay();
+        }
+
         // Subscribe to topic
-        ros::Subscriber sub = n_.subscribe(full_topic, queue_size_, &GraftImuTopic::callback, imu);
+        ros::Subscriber sub = n_.subscribe(full_topic, queue_size_, &GraftImuTopic::callback, imu, hints);
         subs.push_back(sub);
 
         // Parse rest of parameters
