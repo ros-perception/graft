@@ -2,8 +2,8 @@
 Changelog for package graft
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.2.3 (2015-05-20)
+------------------
 * add no_delay parameter
 * Contributors: Chad Rockey, Michael Ferguson
 

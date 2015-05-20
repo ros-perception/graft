@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <package>
   <name>graft</name>
-  <version>0.2.2</version>
+  <version>0.2.3</version>
   <description>
     Graft is not yet finished. It's intended to be a full replacement to
     robot_pose_ekf, including native absolute references, and arbitrary
